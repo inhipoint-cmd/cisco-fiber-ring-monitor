@@ -144,6 +144,8 @@ label.fl{font-size:10.5px;color:var(--text2);display:block;margin-bottom:5px;fon
 .node-circle:hover{filter:brightness(1.3)}
 .node-label{font-size:9px;fill:var(--text2);text-anchor:middle;font-weight:600;font-family:monospace;pointer-events:none}
 .node-sub{font-size:8.5px;fill:var(--text3);text-anchor:middle;pointer-events:none}
+.live-badge{display:inline-block;font-size:9.5px;font-weight:700;color:var(--green);background:rgba(46,204,113,.14);padding:1px 7px;border-radius:9px;letter-spacing:.4px;animation:livepulse 1.6s ease-in-out infinite}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:.4}}
 .link-line{cursor:pointer;transition:.15s}
 .link-line:hover{stroke-width:6;filter:brightness(1.4)}
 .link-hit{stroke:transparent;stroke-width:14;fill:none;cursor:pointer}
@@ -326,7 +328,7 @@ label.fl{font-size:10.5px;color:var(--text2);display:block;margin-bottom:5px;fon
             <div class="topo-controls">
               <div class="legend" id="topoLegend"></div>
             </div>
-            <svg id="topoSvg" viewBox="0 0 980 560" preserveAspectRatio="xMidYMid meet"></svg>
+            <svg id="topoSvg" viewBox="0 0 980 600" preserveAspectRatio="xMidYMid meet"></svg>
             <div class="muted mt8" style="font-size:11px">Click a link to open the detail panel · click a node to focus its interfaces. SNMP counters, optical DOM and protocol state are polled every few seconds (simulated).</div>
           </div>
         </div>
@@ -386,7 +388,7 @@ label.fl{font-size:10.5px;color:var(--text2);display:block;margin-bottom:5px;fon
           </div>
         </div>
         <div class="grid" style="grid-template-columns:1.4fr 1fr">
-          <div class="card"><div class="hd"><h3>Path on Topology</h3></div><div class="bd"><svg id="paSvg" viewBox="0 0 980 560" preserveAspectRatio="xMidYMid meet" style="width:100%;height:480px;background:radial-gradient(ellipse at center,#0d1426,#080b14);border-radius:8px"></svg></div></div>
+          <div class="card"><div class="hd"><h3>Path on Topology</h3></div><div class="bd"><svg id="paSvg" viewBox="0 0 980 600" preserveAspectRatio="xMidYMid meet" style="width:100%;height:480px;background:radial-gradient(ellipse at center,#0d1426,#080b14);border-radius:8px"></svg></div></div>
           <div class="card"><div class="hd"><h3>Hop-by-Hop Evidence</h3></div><div class="bd" id="paHops"></div></div>
         </div>
       </section>
@@ -545,47 +547,55 @@ const APP = {};
    1. DATA MODEL — simulated Cisco fiber ring
    ============================================================ */
 APP.SWITCHES = [
-  {id:'sw1', name:'SW-CORE-01', ip:'10.10.100.1',  model:'Catalyst 9300', ios:'17.06.03', serial:'FOC2308X11A', loc:'DC-A / Rack 1', role:'core'},
-  {id:'sw2', name:'SW-CORE-02', ip:'10.10.100.2',  model:'Catalyst 9300', ios:'17.06.03', serial:'FOC2308X12B', loc:'DC-B / Rack 1', role:'core'},
-  {id:'sw3', name:'SW-DIST-01', ip:'10.10.100.3',  model:'Catalyst 9200', ios:'17.04.01', serial:'FOC2211Y33C', loc:'DC-A / Rack 2', role:'distribution'},
-  {id:'sw4', name:'SW-DIST-02', ip:'10.10.100.4',  model:'Catalyst 9200', ios:'17.04.01', serial:'FOC2211Y34D', loc:'DC-B / Rack 2', role:'distribution'},
-  {id:'sw5', name:'SW-ACC-01',  ip:'10.10.100.11', model:'Catalyst 2960X',ios:'15.2(7)E5',serial:'FOC2105X51E', loc:'Floor 1 / IDF-1', role:'access'},
-  {id:'sw6', name:'SW-ACC-02',  ip:'10.10.100.12', model:'Catalyst 2960X',ios:'15.2(7)E5',serial:'FOC2105X52F', loc:'Floor 2 / IDF-2', role:'access'},
-  {id:'sw7', name:'SW-ACC-03',  ip:'10.10.100.13', model:'Catalyst 3650', ios:'16.12.05',serial:'FOC2202X73G', loc:'Floor 3 / IDF-3', role:'access'},
-  {id:'sw8', name:'SW-ACC-04',  ip:'10.10.100.14', model:'Catalyst 3650', ios:'16.12.05',serial:'FOC2202X74H', loc:'Floor 4 / IDF-4', role:'access'},
-  {id:'sw9', name:'SW-ACC-05',  ip:'10.10.100.15', model:'Catalyst 9200', ios:'17.04.01',serial:'FOC2211Y95I', loc:'Floor 5 / IDF-5', role:'access'},
-  {id:'sw10',name:'SW-ACC-06',  ip:'10.10.100.16', model:'Catalyst 9200', ios:'17.04.01',serial:'FOC2211Y96J', loc:'Floor 6 / IDF-6', role:'access'},
-  {id:'sw11',name:'SW-ACC-07',  ip:'10.10.100.17', model:'Catalyst 9300', ios:'17.06.03',serial:'FOC2308X17K', loc:'Floor 7 / IDF-7', role:'access'},
-  {id:'sw12',name:'SW-ACC-08',  ip:'10.10.100.18', model:'Catalyst 9300', ios:'17.06.03',serial:'FOC2308X18L', loc:'Floor 8 / IDF-8', role:'access'},
+  {id:'sw1', name:'SW-CORE-01', ip:'10.10.100.1',  model:'Catalyst 9300', ios:'17.06.03', serial:'FOC2308X11A', loc:'DC-A / Rack 1', role:'core', speed:10},
+  {id:'sw2', name:'SW-CORE-02', ip:'10.10.100.2',  model:'Catalyst 9300', ios:'17.06.03', serial:'FOC2308X12B', loc:'DC-B / Rack 1', role:'core', speed:10},
+  {id:'sw3', name:'SW-DIST-01', ip:'10.10.100.3',  model:'Catalyst 9200', ios:'17.04.01', serial:'FOC2211Y33C', loc:'DC-A / Rack 2', role:'distribution', speed:10},
+  {id:'sw4', name:'SW-DIST-02', ip:'10.10.100.4',  model:'Catalyst 9200', ios:'17.04.01', serial:'FOC2211Y34D', loc:'DC-B / Rack 2', role:'distribution', speed:10},
+  {id:'sw5', name:'SW-ACC-01',  ip:'10.10.100.11', model:'Catalyst 2960X',ios:'15.2(7)E5',serial:'FOC2105X51E', loc:'Floor 1 / IDF-1', role:'access', speed:1},
+  {id:'sw6', name:'SW-ACC-02',  ip:'10.10.100.12', model:'Catalyst 2960X',ios:'15.2(7)E5',serial:'FOC2105X52F', loc:'Floor 2 / IDF-2', role:'access', speed:1},
+  {id:'sw7', name:'SW-ACC-03',  ip:'10.10.100.13', model:'Catalyst 3650', ios:'16.12.05',serial:'FOC2202X73G', loc:'Floor 3 / IDF-3', role:'access', speed:1},
+  {id:'sw8', name:'SW-ACC-04',  ip:'10.10.100.14', model:'Catalyst 3650', ios:'16.12.05',serial:'FOC2202X74H', loc:'Floor 4 / IDF-4', role:'access', speed:1},
+  {id:'sw9', name:'SW-ACC-05',  ip:'10.10.100.15', model:'Catalyst 9200', ios:'17.04.01',serial:'FOC2211Y95I', loc:'Floor 5 / IDF-5', role:'access', speed:10},
+  {id:'sw10',name:'SW-ACC-06',  ip:'10.10.100.16', model:'Catalyst 9200', ios:'17.04.01',serial:'FOC2211Y96J', loc:'Floor 6 / IDF-6', role:'access', speed:10},
+  {id:'sw11',name:'SW-ACC-07',  ip:'10.10.100.17', model:'Catalyst 9300', ios:'17.06.03',serial:'FOC2308X17K', loc:'Floor 7 / IDF-7', role:'access', speed:10},
+  {id:'sw12',name:'SW-ACC-08',  ip:'10.10.100.18', model:'Catalyst 9300', ios:'17.06.03',serial:'FOC2308X18L', loc:'Floor 8 / IDF-8', role:'access', speed:10},
 ];
 
 // Ring order: 1-3-5-7-9-11-12-10-8-6-4-2-1  (closed ring, dual-core)
-APP.RING_ORDER = ['sw1','sw3','sw5','sw7','sw9','sw11','sw12','sw10','sw8','sw6','sw4','sw2'];
+APP.RING_ORDER = ['sw1','sw2','sw4','sw3']; // 10G backbone ring (core + distribution)
 
 // Build fiber links from ring order + two core cross-links
 APP.LINKS = [];
 (function buildLinks(){
   const ring = APP.RING_ORDER;
   let idx=1;
+  // Ring backbone edges (10G) — closed loop over RING_ORDER
   for(let i=0;i<ring.length;i++){
     const a=ring[i], b=ring[(i+1)%ring.length];
     APP.LINKS.push(makeLink(idx++, a,b, 'TenGig1/1/1','TenGig1/1/2', true));
   }
-  // core inter-chassis trunk (not part of ring)
-  APP.LINKS.push(makeLink(idx++, 'sw1','sw2','TenGig1/1/4','TenGig1/1/4', false));
-  // distribution cross-link
-  APP.LINKS.push(makeLink(idx++, 'sw3','sw4','TenGig1/1/3','TenGig1/1/3', false));
+  // Linear access chains hanging off each backbone node (ring:false)
+  const chains=[['sw1','sw11','sw12'],['sw2','sw9','sw10'],['sw3','sw5','sw6'],['sw4','sw7','sw8']];
+  chains.forEach(c=>{
+    for(let i=0;i<c.length-1;i++){
+      APP.LINKS.push(makeLink(idx++, c[i], c[i+1], 'auto','auto', false));
+    }
+  });
 })();
 
 function makeLink(id, aSw, bSw, aIf, bIf, ring){
-  const cap = 10000; // 10Gbps
+  const sA=swObj(aSw).speed||10, sB=swObj(bSw).speed||10;
+  const cap = Math.min(sA,sB)*1000;               // Mbps — link capped by the slower endpoint
+  const tenG = cap>=10000;
+  const ifA = aIf==='auto' ? (tenG?('TenGig1/0/'+id):('Gig1/0/'+id)) : aIf;
+  const ifB = bIf==='auto' ? (tenG?('TenGig1/0/'+(id+1)):('Gig1/0/'+(id+1))) : bIf;
   return {
-    id:'L'+id, name: ring ? ('Ring-'+id) : ('Trunk-'+id),
-    a:{sw:aSw, if:aIf}, b:{sw:bSw, if:bIf},
-    ring: ring, capacity_mbps: cap,
+    id:'L'+id, name: ring ? ('Ring-'+id) : ('Lin-'+id),
+    a:{sw:aSw, if:ifA}, b:{sw:bSw, if:ifB},
+    ring: ring, linear: !ring, capacity_mbps: cap, speed_g: cap/1000,
     status: 'up', verification:'verified',
     a_metrics:null, b_metrics:null,
-    history: genHistory(60), // 60 points
+    history: genHistory(60),
     incident:null,
   };
 }
@@ -617,8 +627,8 @@ function genHistory(points, base){
 // Per-endpoint live metric generator
 function freshMetrics(link, side){
   const cap = link.capacity_mbps;
-  const rx = rand(120, 4800);
-  const tx = rand(120, 4800);
+  const rx = rand(120, Math.max(150, cap*0.5));
+  const tx = rand(120, Math.max(150, cap*0.5));
   return {
     rx_mbps: rx, tx_mbps: tx,
     rx_octets: Math.floor(rand(1e9,9e9)),
@@ -655,8 +665,8 @@ function switchStatus(id){
 
 // ===================== Alerts =====================
 APP.ALERTS = [
-  {id:'A1',sev:'major',title:'High RX utilization on Ring-3',target:'L3 (SW-DIST-01 ↔ SW-ACC-01)',status:'open',opened:nowSec()-3600*2,ack:null,closed:null,cause:'probable: micro-burst / oversubscription',dedup:'L3-util'},
-  {id:'A2',sev:'warning',title:'SFP temperature warning — SW-ACC-03',target:'SW-ACC-03 TenGig1/1/1',status:'acknowledged',opened:nowSec()-3600*5,ack:nowSec()-3600*4,closed:null,cause:'probable: ambient / airflow',dedup:'sw7-temp'},
+  {id:'A1',sev:'major',title:'High RX utilization on Ring-3',target:'L3 (10.10.100.4 ↔ 10.10.100.3)',status:'open',opened:nowSec()-3600*2,ack:null,closed:null,cause:'probable: micro-burst / oversubscription',dedup:'L3-util'},
+  {id:'A2',sev:'warning',title:'SFP temperature warning — 10.10.100.13',target:'10.10.100.13 Gig1/0/9',status:'acknowledged',opened:nowSec()-3600*5,ack:nowSec()-3600*4,closed:null,cause:'probable: ambient / airflow',dedup:'sw7-temp'},
   {id:'A3',sev:'informational',title:'New device discovered — 10.10.100.21',target:'Discovery scan #1042',status:'closed',opened:nowSec()-3600*9,ack:nowSec()-3600*8,closed:nowSec()-3600*7,cause:'discovery',dedup:'disc-21'},
   {id:'A4',sev:'critical',title:'Link DOWN — Ring-7',target:'L7 (SW-ACC-05 ↔ SW-ACC-07)',status:'open',opened:nowSec()-60*8,ack:null,closed:null,cause:'probable: fiber physical loss',dedup:'L7-down'},
 ];
@@ -877,6 +887,7 @@ function navigate(page){
 }
 APP.refreshActive=function(){
   if(APP.PAGE_RENDER[APP.CUR]) APP.PAGE_RENDER[APP.CUR]();
+  refreshDetail();
   updateTopbar();
 };
 function updateTopbar(){
@@ -924,14 +935,17 @@ function clockTick(){
    ============================================================ */
 APP.NODE_POS = {};
 (function layoutNodes(){
-  const cx=490, cy=280, R=210;
-  const ring=APP.RING_ORDER, n=ring.length;
-  ring.forEach((id,i)=>{
-    const ang=-Math.PI/2 + i*2*Math.PI/n;
-    APP.NODE_POS[id]={x:cx+R*Math.cos(ang), y:cy+R*Math.sin(ang), ring:true};
+  // Backbone ring laid out as a square (TL, TR, BR, BL) matching RING_ORDER
+  const pos={sw1:{x:380,y:190}, sw2:{x:600,y:190}, sw4:{x:600,y:410}, sw3:{x:380,y:410}};
+  APP.RING_ORDER.forEach(id=>{ APP.NODE_POS[id]={x:pos[id].x, y:pos[id].y, ring:true}; });
+  // Linear access chains radiate diagonally outward from each backbone node
+  const chain={sw1:[['sw11',280,110],['sw12',180,60]],
+               sw2:[['sw9',700,110],['sw10',800,60]],
+               sw3:[['sw5',280,490],['sw6',180,540]],
+               sw4:[['sw7',700,490],['sw8',800,540]]};
+  Object.keys(chain).forEach(hub=>{
+    chain[hub].forEach(([id,x,y])=>{ APP.NODE_POS[id]={x,y,ring:false}; });
   });
-  // Core inter-chassis link sw1<->sw2 : place a second offset near their ring pos
-  // Already on ring; trunk drawn as arc. distribution cross-link sw3<->sw4 similar.
 })();
 
 function topoSVG(linksFilter, highlightPath, container, opts){
@@ -952,24 +966,17 @@ function topoSVG(linksFilter, highlightPath, container, opts){
     if(!a||!b)return;
     const color=linkColor(l);
     const inPath = pathSet.has(l.id);
-    const isTrunk = !l.ring;
-    let d;
-    if(isTrunk){
-      const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
-      const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
-      const ox=-dy/len*40, oy=dx/len*40;
-      d=`M ${a.x} ${a.y} Q ${(mx+ox).toFixed(1)} ${(my+oy).toFixed(1)} ${b.x} ${b.y}`;
-    } else {
-      d=`M ${a.x} ${a.y} L ${b.x} ${b.y}`;
-    }
+    const tenG = l.capacity_mbps>=10000;
+    // ring backbone = thick; linear access = thinner; 1G linear thinner still
+    const sw = inPath?6 : (l.ring?5 : (tenG?3.5:2.5));
+    const d=`M ${a.x} ${a.y} L ${b.x} ${b.y}`;
     const dash = l.status==='down'?' stroke-dasharray="7 6"':'';
     const pathClass = inPath?'link-line flowpath':'link-line';
     const stroke = inPath?'#00bceb':color;
-    const sw = inPath?5:4;
     s += `<path class="link-hit" d="${d}" data-link="${l.id}"></path>`;
     s += `<path class="${pathClass}" d="${d}" stroke="${stroke}" stroke-width="${sw}" fill="none" stroke-linecap="round"${dash} data-link="${l.id}"></path>`;
     const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
-    s += `<text x="${mx.toFixed(1)}" y="${(my-6).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#7e8db0" pointer-events="none">${l.name}</text>`;
+    s += `<text x="${mx.toFixed(1)}" y="${(my-6).toFixed(1)}" text-anchor="middle" font-size="8" fill="#7e8db0" pointer-events="none">${l.name}</text>`;
   });
   // nodes
   APP.SWITCHES.forEach(dev=>{
@@ -978,11 +985,14 @@ function topoSVG(linksFilter, highlightPath, container, opts){
     const fill = st==='down'?'url(#nodeDown)':st==='degraded'?'url(#nodeDeg)':st==='failover'?'url(#nodeFail)':'url(#nodeUp)';
     const filt = st!=='up'?' filter="url(#glow)"':'';
     const roleDot = dev.role==='core'?'#00bceb':dev.role==='distribution'?'#f39c12':'#6b7a96';
-    s += `<circle cx="${p.x}" cy="${p.y}" r="15" fill="none" stroke="#2a3a5c" stroke-width="1"/>`;
+    const tenG = (dev.speed||10)>=10;
+    const ringColor = tenG?'#00bceb':'#f39c12';
+    // outer ring colour identifies port speed: cyan = 10G, amber = 1G
+    s += `<circle cx="${p.x}" cy="${p.y}" r="15" fill="none" stroke="${ringColor}" stroke-width="${tenG?2.5:2}" opacity="0.9"/>`;
     s += `<circle class="node-circle" cx="${p.x}" cy="${p.y}" r="12" fill="${fill}" stroke="#0a0e1a" stroke-width="2"${filt} data-sw="${dev.id}"></circle>`;
     s += `<circle cx="${p.x+9}" cy="${p.y-9}" r="3" fill="${roleDot}"/>`;
     s += `<text class="node-label" x="${p.x}" y="${p.y+28}">${dev.ip}</text>`;
-    s += `<text class="node-sub" x="${p.x}" y="${p.y+40}">${dev.name.replace('SW-','')}</text>`;
+    s += `<text class="node-sub" x="${p.x}" y="${p.y+40}">${dev.name.replace('SW-','')} · ${tenG?'10G':'1G'}</text>`;
   });
   s += `</g>`;
   // target svg element: use container if it's already an <svg>, else build one inside it
@@ -991,7 +1001,7 @@ function topoSVG(linksFilter, highlightPath, container, opts){
   else {
     container.innerHTML='';
     svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.setAttribute('viewBox','0 0 980 560');
+    svg.setAttribute('viewBox','0 0 980 600');
     svg.setAttribute('preserveAspectRatio','xMidYMid meet');
     svg.style.width='100%';
     svg.style.height=(opts.h||240)+'px';
@@ -1014,7 +1024,7 @@ APP._tip=null;
 function showLinkTip(e,l){
   hideTip();
   const u=Math.max(l.a_metrics.utilization,l.b_metrics.utilization);
-  const tip=el(`<div class="chart-tip" style="opacity:1"><b>${l.name}</b><br>${swIp(l.a.sw)} ↔ ${swIp(l.b.sw)}<br>${statusPill(l.status)} · util ${fmt(u,0)}%</div>`);
+  const tip=el(`<div class="chart-tip" style="opacity:1"><b>${l.name}</b><br>${swIp(l.a.sw)} ↔ ${swIp(l.b.sw)}<br>${statusPill(l.status)} · ${l.capacity_mbps/1000}G · util ${fmt(u,0)}%</div>`);
   document.body.appendChild(tip); APP._tip=tip; moveTip(e);
 }
 function moveTip(e){
@@ -1037,9 +1047,10 @@ APP.LEGEND=[
 ];
 function renderLegend(container){
   container.innerHTML = APP.LEGEND.map(l=>`<div class="li"><span class="sw" style="background:${l.c}"></span>${l.n}</div>`).join('')
-    + `<div class="li" style="margin-left:auto"><span class="nd" style="background:var(--cisco)"></span>core</div>`
-    + `<div class="li"><span class="nd" style="background:var(--orange)"></span>distribution</div>`
-    + `<div class="li"><span class="nd" style="background:var(--grey)"></span>access</div>`;
+    + `<div class="li" style="margin-left:auto"><span class="sw" style="background:#00bceb;height:4px"></span>Ring link (10G)</div>`
+    + `<div class="li"><span class="sw" style="background:#6b7a96;height:2px"></span>Linear access</div>`
+    + `<div class="li"><span class="nd" style="background:var(--cisco)"></span>10G switch</div>`
+    + `<div class="li"><span class="nd" style="background:var(--orange)"></span>1G switch</div>`;
 }
 
 /* ============================================================
@@ -1047,15 +1058,30 @@ function renderLegend(container){
    ============================================================ */
 function openDetail(linkId){
   const l=linkById(linkId); if(!l)return;
+  APP._detailLink = linkId;
   const p=$('#detailPanel');
-  $('#dpTitle').innerHTML = `${statusPill(l.status)} <span style="margin-left:4px">${l.name}</span>`;
+  $('#dpTitle').innerHTML = `${statusPill(l.status)} <span style="margin-left:4px">${l.name}</span> <span class="live-badge">LIVE</span>`;
   $('#dpBody').innerHTML = detailBody(l);
   p.classList.add('open');
+  drawDetailMini(l);
+}
+function drawDetailMini(l){
   const mini=$('#dpMini');
   if(mini){ lineChart(mini, [{name:'RX Mbps',data:l.history.slice(-40).map(h=>h.v),color:'#00bceb',area:true}], {min:0,dec:0,h:90,legend:false}); }
 }
+function refreshDetail(){
+  const p=$('#detailPanel');
+  if(!p || !p.classList.contains('open') || !APP._detailLink) return;
+  const l=linkById(APP._detailLink); if(!l)return;
+  const sb=$('#dpBody').scrollTop||0;
+  $('#dpTitle').innerHTML = `${statusPill(l.status)} <span style="margin-left:4px">${l.name}</span> <span class="live-badge">LIVE</span>`;
+  $('#dpBody').innerHTML = detailBody(l);
+  $('#dpBody').scrollTop=sb;
+  drawDetailMini(l);
+}
 function openSwitchDetail(swId){
   const s=swObj(swId); if(!s)return;
+  APP._detailLink=null;
   const p=$('#detailPanel');
   $('#dpTitle').innerHTML = `<span style="color:var(--cisco)">${s.ip}</span> <span class="muted" style="font-size:12px">${s.name}</span>`;
   $('#dpBody').innerHTML = switchDetailBody(s);
@@ -1087,6 +1113,15 @@ function detailBody(l){
       <div class="muted" style="font-size:11px;margin-top:4px">Opened ${fmtDate(i.opened)} (${timeAgo(i.opened)})<br>Cause: ${i.cause}</div></div></div>`;
   }
   return `
+  <div class="dp-sec">
+    <h5><span class="live-badge">LIVE</span> Throughput · ${a.ip} ↔ ${b.ip}</h5>
+    <div class="dp-grid">
+      <div class="dp-item"><div class="k">${a.ip} → ${b.ip}</div><div class="v" style="font-size:17px;color:var(--cisco)">${fmt(ma.tx_mbps,1)}<span class="u"> Mbps</span></div></div>
+      <div class="dp-item"><div class="k">${b.ip} → ${a.ip}</div><div class="v" style="font-size:17px;color:var(--green)">${fmt(mb.tx_mbps,1)}<span class="u"> Mbps</span></div></div>
+      <div class="dp-item"><div class="k">Capacity</div><div class="v">${capFmt}</div></div>
+      <div class="dp-item"><div class="k">Peak util</div><div class="v" style="font-size:17px;color:${u>70?'var(--orange)':'#fff'}">${fmt(u,0)}<span class="u">%</span></div></div>
+    </div>
+  </div>
   <div class="dp-sec">
     <h5>Link</h5>
     <div class="dp-grid">
@@ -1293,7 +1328,7 @@ function drawTraffic(){
   const utilSeries=[];
   if(dirOpt.rx)utilSeries.push({name:'RX util %',data:rx.map(v=>v/cap*100),color:'var(--green)'});
   if(dirOpt.tx)utilSeries.push({name:'TX util %',data:tx.map(v=>v/cap*100),color:'var(--cisco)'});
-  $('#trSub2').textContent='vs '+cap+' Mbps capacity';
+  $('#trSub2').textContent='vs '+(cap/1000)+' Gbps capacity';
   lineChart($('#trChart2'),utilSeries,{min:0,max:100,dec:0});
   // top links
   const ranked=APP.LINKS.map(l=>({l,u:Math.max(l.a_metrics.utilization,l.b_metrics.utilization),rx:l.a_metrics.rx_mbps+l.b_metrics.rx_mbps})).sort((a,b)=>b.u-a.u);
