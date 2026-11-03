@@ -142,7 +142,7 @@ label.fl{font-size:10.5px;color:var(--text2);display:block;margin-bottom:5px;fon
 .legend .nd{width:11px;height:11px;border-radius:50%}
 .node-circle{cursor:pointer;transition:.15s}
 .node-circle:hover{filter:brightness(1.3)}
-.node-label{font-size:10px;fill:var(--text2);text-anchor:middle;font-weight:600;pointer-events:none}
+.node-label{font-size:9px;fill:var(--text2);text-anchor:middle;font-weight:600;font-family:monospace;pointer-events:none}
 .node-sub{font-size:8.5px;fill:var(--text3);text-anchor:middle;pointer-events:none}
 .link-line{cursor:pointer;transition:.15s}
 .link-line:hover{stroke-width:6;filter:brightness(1.4)}
@@ -159,6 +159,13 @@ label.fl{font-size:10.5px;color:var(--text2);display:block;margin-bottom:5px;fon
 .dp-sec{margin-bottom:18px}
 .dp-sec h5{font-size:10.5px;text-transform:uppercase;color:var(--text3);letter-spacing:.7px;margin-bottom:9px;font-weight:600}
 .dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{width:470px;max-width:100%;max-height:88vh;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+.modal .dp-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal .dp-hd h4{font-size:14px;color:#fff}
+.modal .dp-bd{flex:1;overflow-y:auto;padding:16px 18px}
+.mrow{margin-bottom:12px}
+.mrow label{display:block;font-size:10.5px;text-transform:uppercase;color:var(--text3);letter-spacing:.5px;margin-bottom:5px;font-weight:600}
 .dp-item{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:9px 11px}
 .dp-item .k{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
 .dp-item .v{font-size:14px;color:#fff;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
@@ -194,9 +201,24 @@ label.fl{font-size:10.5px;color:var(--text2);display:block;margin-bottom:5px;fon
 /* discovery result rows */
 .disc-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border)}
 .disc-row:hover{background:rgba(74,158,255,.05)}
-.disc-row .ip{font-family:monospace;color:var(--cisco);font-size:12px;width:120px}
-.disc-row .name{font-weight:600;color:#fff;font-size:12px;flex:1}
-.disc-row .name .mdl{color:var(--text3);font-weight:400;font-size:11px}
+.disc-row .ip{font-family:monospace;color:#fff;font-size:14px;font-weight:700;width:140px;flex-shrink:0;letter-spacing:.3px}
+.disc-row .name{font-weight:400;color:var(--text2);font-size:11px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.disc-row .name .mdl{color:var(--text3);font-weight:400;font-size:11px;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.disc-wrap{border-bottom:1px solid var(--border)}
+.disc-row .vchips{display:flex;gap:4px;flex-shrink:0}
+.vchip{font-size:10px;font-family:monospace;padding:2px 6px;border-radius:4px;border:1px solid var(--border2);color:var(--text3);background:var(--bg2);min-width:30px;text-align:center}
+.vchip.ok{color:var(--green);border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.08)}
+.vchip.fail{color:#ff4b4b;border-color:rgba(255,75,75,.3);background:rgba(255,75,75,.06)}
+.vchip.best{outline:1px solid var(--cisco);font-weight:700;color:var(--cisco)}
+.cred-col{flex:1;display:flex;flex-direction:column;gap:5px}
+.cred-col .cb{display:flex;align-items:center;gap:6px;font-size:12px;color:#fff;cursor:pointer;font-weight:600}
+.cred-col .cb input{accent-color:var(--cisco);width:14px;height:14px}
+.disc-detail{padding:10px 14px 12px 150px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:11px}
+.disc-detail .vrow{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px dashed var(--border)}
+.disc-detail .vrow:last-child{border-bottom:none}
+.disc-detail .vlab{font-family:monospace;color:var(--cisco);width:34px;font-weight:700}
+.disc-detail .vres{flex:1;color:var(--text2)}
+.disc-detail .vrtt{color:var(--text3);font-family:monospace;white-space:nowrap}
 
 .settings-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
 .settings-tabs a{padding:9px 16px;font-size:12px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent}
@@ -385,14 +407,38 @@ label.fl{font-size:10.5px;color:var(--text2);display:block;margin-bottom:5px;fon
       <!-- ============ DISCOVERY ============ -->
       <section class="page" id="page-discovery">
         <div class="card mb12">
-          <div class="hd"><h3>⊙ Automatic IP-Range Discovery</h3><span class="sub">SNMPv3 read-only · authorized scope enforcement</span></div>
+          <div class="hd"><h3>⊙ Automatic IP-Range Discovery</h3><span class="sub">Multi-version profiling · SNMPv1 / v2c / v3 · authorized scope enforcement</span></div>
           <div class="bd">
             <div class="form-row">
-              <div style="flex:2"><label class="fl">CIDR / IP Range</label><input class="input" id="dcCidr" value="10.10.10.0/28"></div>
-              <div><label class="fl">SNMP Profile</label><select id="dcProfile"></select></div>
+              <div style="flex:2"><label class="fl">CIDR / IP Range</label><input class="input" id="dcCidr" value="10.10.100.0/28"></div>
+              <div><label class="fl">Profile Strategy</label><select id="dcStrategy"><option value="v2c" selected>SNMPv2c only</option><option value="auto">Auto — try v1 → v2c → v3</option><option value="v3">SNMPv3 only</option><option value="v1">SNMPv1 only</option></select></div>
               <div><label class="fl">Concurrency</label><input class="input" id="dcConc" value="32" type="number" min="1" max="256"></div>
               <div><label class="fl">ICMP Pre-check</label><select id="dcIcmp"><option>enabled</option><option>disabled</option></select></div>
               <div><button class="btn primary" id="dcScan">▶ Start Scan</button></div>
+            </div>
+            <div class="form-row mt8" style="align-items:flex-start;gap:14px">
+              <div class="cred-col">
+                <label class="cb"><input type="checkbox" id="dcV1en"> SNMPv1</label>
+                <input class="input" id="dcV1comm" type="password" placeholder="community ••••••" autocomplete="off" style="font-size:11px">
+                <div class="muted" style="font-size:10px">legacy · read-only</div>
+              </div>
+              <div class="cred-col">
+                <label class="cb"><input type="checkbox" id="dcV2en" checked> SNMPv2c</label>
+                <input class="input" id="dcV2comm" type="password" placeholder="community ••••••" autocomplete="off" style="font-size:11px">
+                <div class="muted" style="font-size:10px">community-based · 64-bit counters</div>
+              </div>
+              <div class="cred-col" style="flex:2.4">
+                <label class="cb"><input type="checkbox" id="dcV3en"> SNMPv3 (USM)</label>
+                <div class="form-row" style="gap:6px">
+                  <input class="input" id="dcV3user" placeholder="user" autocomplete="off" style="font-size:11px">
+                  <select class="input" id="dcV3level" style="font-size:11px"><option>authPriv</option><option>authNoPriv</option><option>noAuthNoPriv</option></select>
+                  <select class="input" id="dcV3auth" style="font-size:11px"><option>SHA</option><option>MD5</option><option>none</option></select>
+                  <input class="input" id="dcV3apass" type="password" placeholder="auth pass ••••••" autocomplete="off" style="font-size:11px">
+                  <select class="input" id="dcV3priv" style="font-size:11px"><option>AES-128</option><option>AES-256</option><option>DES</option><option>none</option></select>
+                  <input class="input" id="dcV3ppass" type="password" placeholder="priv pass ••••••" autocomplete="off" style="font-size:11px">
+                </div>
+                <div class="muted" style="font-size:10px">user-based · auth + priv passphrases</div>
+              </div>
             </div>
             <div class="mt8" id="dcScopeWarn"></div>
             <div id="dcProgressWrap" style="display:none" class="mt12">
@@ -476,12 +522,21 @@ label.fl{font-size:10.5px;color:var(--text2);display:block;margin-bottom:5px;fon
 
 <div class="toast-wrap" id="toastWrap"></div>
 
+<div id="profileModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="dp-hd"><h4 id="pmTitle">Add SNMP Profile</h4><div class="x" id="pmClose">×</div></div>
+    <div class="dp-bd" id="pmBody"></div>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    Cisco Fiber Ring Monitoring Dashboard
    Self-contained simulation of the platform described in the
    specification PDF. All telemetry is generated/simulated
-   client-side; no real SNMP polling is performed.
+   client-side; no real SNMP polling is performed. All SNMP
+   credential fields are masked (type=password) — no real
+   community strings or passphrases are stored in this file.
    ============================================================ */
 "use strict";
 const APP = {};
@@ -490,18 +545,18 @@ const APP = {};
    1. DATA MODEL — simulated Cisco fiber ring
    ============================================================ */
 APP.SWITCHES = [
-  {id:'sw1', name:'SW-CORE-01', ip:'10.10.10.1',  model:'Catalyst 9300', ios:'17.06.03', serial:'FOC2308X11A', loc:'DC-A / Rack 1', role:'core'},
-  {id:'sw2', name:'SW-CORE-02', ip:'10.10.10.2',  model:'Catalyst 9300', ios:'17.06.03', serial:'FOC2308X12B', loc:'DC-B / Rack 1', role:'core'},
-  {id:'sw3', name:'SW-DIST-01', ip:'10.10.10.3',  model:'Catalyst 9200', ios:'17.04.01', serial:'FOC2211Y33C', loc:'DC-A / Rack 2', role:'distribution'},
-  {id:'sw4', name:'SW-DIST-02', ip:'10.10.10.4',  model:'Catalyst 9200', ios:'17.04.01', serial:'FOC2211Y34D', loc:'DC-B / Rack 2', role:'distribution'},
-  {id:'sw5', name:'SW-ACC-01',  ip:'10.10.10.11', model:'Catalyst 2960X',ios:'15.2(7)E5',serial:'FOC2105X51E', loc:'Floor 1 / IDF-1', role:'access'},
-  {id:'sw6', name:'SW-ACC-02',  ip:'10.10.10.12', model:'Catalyst 2960X',ios:'15.2(7)E5',serial:'FOC2105X52F', loc:'Floor 2 / IDF-2', role:'access'},
-  {id:'sw7', name:'SW-ACC-03',  ip:'10.10.10.13', model:'Catalyst 3650', ios:'16.12.05',serial:'FOC2202X73G', loc:'Floor 3 / IDF-3', role:'access'},
-  {id:'sw8', name:'SW-ACC-04',  ip:'10.10.10.14', model:'Catalyst 3650', ios:'16.12.05',serial:'FOC2202X74H', loc:'Floor 4 / IDF-4', role:'access'},
-  {id:'sw9', name:'SW-ACC-05',  ip:'10.10.10.15', model:'Catalyst 9200', ios:'17.04.01',serial:'FOC2211Y95I', loc:'Floor 5 / IDF-5', role:'access'},
-  {id:'sw10',name:'SW-ACC-06',  ip:'10.10.10.16', model:'Catalyst 9200', ios:'17.04.01',serial:'FOC2211Y96J', loc:'Floor 6 / IDF-6', role:'access'},
-  {id:'sw11',name:'SW-ACC-07',  ip:'10.10.10.17', model:'Catalyst 9300', ios:'17.06.03',serial:'FOC2308X17K', loc:'Floor 7 / IDF-7', role:'access'},
-  {id:'sw12',name:'SW-ACC-08',  ip:'10.10.10.18', model:'Catalyst 9300', ios:'17.06.03',serial:'FOC2308X18L', loc:'Floor 8 / IDF-8', role:'access'},
+  {id:'sw1', name:'SW-CORE-01', ip:'10.10.100.1',  model:'Catalyst 9300', ios:'17.06.03', serial:'FOC2308X11A', loc:'DC-A / Rack 1', role:'core'},
+  {id:'sw2', name:'SW-CORE-02', ip:'10.10.100.2',  model:'Catalyst 9300', ios:'17.06.03', serial:'FOC2308X12B', loc:'DC-B / Rack 1', role:'core'},
+  {id:'sw3', name:'SW-DIST-01', ip:'10.10.100.3',  model:'Catalyst 9200', ios:'17.04.01', serial:'FOC2211Y33C', loc:'DC-A / Rack 2', role:'distribution'},
+  {id:'sw4', name:'SW-DIST-02', ip:'10.10.100.4',  model:'Catalyst 9200', ios:'17.04.01', serial:'FOC2211Y34D', loc:'DC-B / Rack 2', role:'distribution'},
+  {id:'sw5', name:'SW-ACC-01',  ip:'10.10.100.11', model:'Catalyst 2960X',ios:'15.2(7)E5',serial:'FOC2105X51E', loc:'Floor 1 / IDF-1', role:'access'},
+  {id:'sw6', name:'SW-ACC-02',  ip:'10.10.100.12', model:'Catalyst 2960X',ios:'15.2(7)E5',serial:'FOC2105X52F', loc:'Floor 2 / IDF-2', role:'access'},
+  {id:'sw7', name:'SW-ACC-03',  ip:'10.10.100.13', model:'Catalyst 3650', ios:'16.12.05',serial:'FOC2202X73G', loc:'Floor 3 / IDF-3', role:'access'},
+  {id:'sw8', name:'SW-ACC-04',  ip:'10.10.100.14', model:'Catalyst 3650', ios:'16.12.05',serial:'FOC2202X74H', loc:'Floor 4 / IDF-4', role:'access'},
+  {id:'sw9', name:'SW-ACC-05',  ip:'10.10.100.15', model:'Catalyst 9200', ios:'17.04.01',serial:'FOC2211Y95I', loc:'Floor 5 / IDF-5', role:'access'},
+  {id:'sw10',name:'SW-ACC-06',  ip:'10.10.100.16', model:'Catalyst 9200', ios:'17.04.01',serial:'FOC2211Y96J', loc:'Floor 6 / IDF-6', role:'access'},
+  {id:'sw11',name:'SW-ACC-07',  ip:'10.10.100.17', model:'Catalyst 9300', ios:'17.06.03',serial:'FOC2308X17K', loc:'Floor 7 / IDF-7', role:'access'},
+  {id:'sw12',name:'SW-ACC-08',  ip:'10.10.100.18', model:'Catalyst 9300', ios:'17.06.03',serial:'FOC2308X18L', loc:'Floor 8 / IDF-8', role:'access'},
 ];
 
 // Ring order: 1-3-5-7-9-11-12-10-8-6-4-2-1  (closed ring, dual-core)
@@ -544,7 +599,7 @@ function fmtBytes(n){
   while(v>=1000&&i<u.length-1){v/=1000;i++}
   return v.toFixed(i<2?0:1)+' '+u[i];
 }
-function swName(id){const s=APP.SWITCHES.find(x=>x.id===id);return s?s.name:id}
+function swIp(id){const s=APP.SWITCHES.find(x=>x.id===id);return s?s.ip:id}
 function swObj(id){return APP.SWITCHES.find(x=>x.id===id)}
 function linkById(id){return APP.LINKS.find(l=>l.id===id)}
 function nowSec(){return Math.floor(Date.now()/1000)}
@@ -602,7 +657,7 @@ function switchStatus(id){
 APP.ALERTS = [
   {id:'A1',sev:'major',title:'High RX utilization on Ring-3',target:'L3 (SW-DIST-01 ↔ SW-ACC-01)',status:'open',opened:nowSec()-3600*2,ack:null,closed:null,cause:'probable: micro-burst / oversubscription',dedup:'L3-util'},
   {id:'A2',sev:'warning',title:'SFP temperature warning — SW-ACC-03',target:'SW-ACC-03 TenGig1/1/1',status:'acknowledged',opened:nowSec()-3600*5,ack:nowSec()-3600*4,closed:null,cause:'probable: ambient / airflow',dedup:'sw7-temp'},
-  {id:'A3',sev:'informational',title:'New device discovered — 10.10.10.21',target:'Discovery scan #1042',status:'closed',opened:nowSec()-3600*9,ack:nowSec()-3600*8,closed:nowSec()-3600*7,cause:'discovery',dedup:'disc-21'},
+  {id:'A3',sev:'informational',title:'New device discovered — 10.10.100.21',target:'Discovery scan #1042',status:'closed',opened:nowSec()-3600*9,ack:nowSec()-3600*8,closed:nowSec()-3600*7,cause:'discovery',dedup:'disc-21'},
   {id:'A4',sev:'critical',title:'Link DOWN — Ring-7',target:'L7 (SW-ACC-05 ↔ SW-ACC-07)',status:'open',opened:nowSec()-60*8,ack:null,closed:null,cause:'probable: fiber physical loss',dedup:'L7-down'},
 ];
 
@@ -618,16 +673,18 @@ APP.ALERTS = [
 
 // ===================== Discovery history & results =====================
 APP.SCAN_HISTORY = [
-  {id:'1042',range:'10.10.10.0/28',scope:'10.10.10.0/24',profile:'snmpv3-ro-priv',status:'completed',progress:100,started:nowSec()-3600*9,finished:nowSec()-3600*9+42,found:6,by:'admin'},
-  {id:'1041',range:'10.10.10.16/28',scope:'10.10.10.0/24',profile:'snmpv3-ro-priv',status:'completed',progress:100,started:nowSec()-3600*20,finished:nowSec()-3600*20+38,found:4,by:'admin'},
-  {id:'1040',range:'10.10.11.0/28',scope:'10.10.11.0/24',profile:'snmpv3-ro-auth',status:'completed',progress:100,started:nowSec()-3600*30,finished:nowSec()-3600*30+51,found:2,by:'netops'},
+  {id:'1042',range:'10.10.100.0/28',scope:'10.10.100.0/24',profile:'v2c only',status:'completed',progress:100,started:nowSec()-3600*9,finished:nowSec()-3600*9+42,found:6,by:'admin'},
+  {id:'1041',range:'10.10.100.16/28',scope:'10.10.100.0/24',profile:'v2c only',status:'completed',progress:100,started:nowSec()-3600*20,finished:nowSec()-3600*20+38,found:4,by:'admin'},
+  {id:'1040',range:'10.10.100.128/28',scope:'10.10.100.0/24',profile:'v2c only',status:'completed',progress:100,started:nowSec()-3600*30,finished:nowSec()-3600*30+51,found:2,by:'netops'},
 ];
 APP.DISC_RESULTS = [];
 
 // ===================== Settings data =====================
 APP.SNMP_PROFILES = [
-  {id:'snmpv3-ro-priv',name:'SNMPv3 RO (authPriv)',user:'mon-ro',auth:'SHA',priv:'AES-128',level:'authPriv',targets:'all'},
-  {id:'snmpv3-ro-auth',name:'SNMPv3 RO (authNoPriv)',user:'mon-ro-legacy',auth:'SHA',priv:'none',level:'authNoPriv',targets:'legacy-floor'},
+  {id:'snmpv2c-ro',version:'v2c',name:'SNMPv2c RO — 10.10.100.0/24',community:'••••••',targets:'10.10.100.0/24'},
+  {id:'snmpv2c-legacy',version:'v2c',name:'SNMPv2c RO — legacy access',community:'••••••',targets:'legacy-floor'},
+  {id:'snmpv3-ro-priv',version:'v3',name:'SNMPv3 RO (authPriv)',user:'mon-ro',auth:'SHA',priv:'AES-128',level:'authPriv',targets:'all'},
+  {id:'snmpv1-ro',version:'v1',name:'SNMPv1 RO (legacy)',community:'••••••',targets:'oob-legacy'},
 ];
 APP.POLL_SCHEDULES = [
   {metric:'Interface status',interval:'5s',method:'SNMP poll + traps'},
@@ -649,8 +706,8 @@ APP.THRESHOLDS = [
   {name:'Flap suppression',value:3,unit:'flaps/60s'},
 ];
 APP.SCOPES = [
-  {cidr:'10.10.10.0/24',desc:'Management VLAN — DC + floors',enabled:true},
-  {cidr:'10.10.11.0/24',desc:'OOB management legacy',enabled:true},
+  {cidr:'10.10.100.0/24',desc:'Management network — DC + floors',enabled:true},
+  {cidr:'10.10.100.128/25',desc:'Lab / staging (read-only)',enabled:false},
   {cidr:'10.10.20.0/24',desc:'Lab / staging (read-only)',enabled:false},
 ];
 APP.NOTIF = [
@@ -758,7 +815,7 @@ APP.SIM = {
       const dedup='L'+l.id.replace('L','')+'-util';
       const existing=APP.ALERTS.find(a=>a.dedup===dedup && a.status!=='closed');
       if(u>=88 && l.status!=='down' && !existing){
-        APP.ALERTS.unshift({id:'A'+(APP.ALERTS.length+1),sev:'major',title:'High utilization on '+l.name,target:l.name+' ('+swName(l.a.sw)+' ↔ '+swName(l.b.sw)+')',status:'open',opened:nowSec(),ack:null,closed:null,cause:'probable: micro-burst / oversubscription',dedup});
+        APP.ALERTS.unshift({id:'A'+(APP.ALERTS.length+1),sev:'major',title:'High utilization on '+l.name,target:l.name+' ('+swIp(l.a.sw)+' ↔ '+swIp(l.b.sw)+')',status:'open',opened:nowSec(),ack:null,closed:null,cause:'probable: micro-burst / oversubscription',dedup});
         toast('New alert: High utilization on '+l.name,'warn');
       }
     });
@@ -772,7 +829,7 @@ APP.SIM = {
     l.incident={id:'INC-'+(1000+Math.floor(Math.random()*900)),opened:nowSec(),cause:'probable: fiber physical loss',type:'linkDown'};
     const dedup=l.id+'-down';
     if(!APP.ALERTS.find(a=>a.dedup===dedup)){
-      APP.ALERTS.unshift({id:'A'+(APP.ALERTS.length+1),sev:'critical',title:'Link DOWN — '+l.name,target:l.name+' ('+swName(l.a.sw)+' ↔ '+swName(l.b.sw)+')',status:'open',opened:nowSec(),ack:null,closed:null,cause:'probable: fiber physical loss',dedup});
+      APP.ALERTS.unshift({id:'A'+(APP.ALERTS.length+1),sev:'critical',title:'Link DOWN — '+l.name,target:l.name+' ('+swIp(l.a.sw)+' ↔ '+swIp(l.b.sw)+')',status:'open',opened:nowSec(),ack:null,closed:null,cause:'probable: fiber physical loss',dedup});
     }
     toast('Simulated fiber cut on '+l.name+' — incident opened','bad');
   },
@@ -924,8 +981,8 @@ function topoSVG(linksFilter, highlightPath, container, opts){
     s += `<circle cx="${p.x}" cy="${p.y}" r="15" fill="none" stroke="#2a3a5c" stroke-width="1"/>`;
     s += `<circle class="node-circle" cx="${p.x}" cy="${p.y}" r="12" fill="${fill}" stroke="#0a0e1a" stroke-width="2"${filt} data-sw="${dev.id}"></circle>`;
     s += `<circle cx="${p.x+9}" cy="${p.y-9}" r="3" fill="${roleDot}"/>`;
-    s += `<text class="node-label" x="${p.x}" y="${p.y+28}">${dev.name.replace('SW-','')}</text>`;
-    s += `<text class="node-sub" x="${p.x}" y="${p.y+40}">${dev.ip}</text>`;
+    s += `<text class="node-label" x="${p.x}" y="${p.y+28}">${dev.ip}</text>`;
+    s += `<text class="node-sub" x="${p.x}" y="${p.y+40}">${dev.name.replace('SW-','')}</text>`;
   });
   s += `</g>`;
   // target svg element: use container if it's already an <svg>, else build one inside it
@@ -957,7 +1014,7 @@ APP._tip=null;
 function showLinkTip(e,l){
   hideTip();
   const u=Math.max(l.a_metrics.utilization,l.b_metrics.utilization);
-  const tip=el(`<div class="chart-tip" style="opacity:1"><b>${l.name}</b><br>${swName(l.a.sw)} ↔ ${swName(l.b.sw)}<br>${statusPill(l.status)} · util ${fmt(u,0)}%</div>`);
+  const tip=el(`<div class="chart-tip" style="opacity:1"><b>${l.name}</b><br>${swIp(l.a.sw)} ↔ ${swIp(l.b.sw)}<br>${statusPill(l.status)} · util ${fmt(u,0)}%</div>`);
   document.body.appendChild(tip); APP._tip=tip; moveTip(e);
 }
 function moveTip(e){
@@ -1000,7 +1057,7 @@ function openDetail(linkId){
 function openSwitchDetail(swId){
   const s=swObj(swId); if(!s)return;
   const p=$('#detailPanel');
-  $('#dpTitle').innerHTML = `<span style="color:var(--cisco)">${s.name}</span>`;
+  $('#dpTitle').innerHTML = `<span style="color:var(--cisco)">${s.ip}</span> <span class="muted" style="font-size:12px">${s.name}</span>`;
   $('#dpBody').innerHTML = switchDetailBody(s);
   p.classList.add('open');
 }
@@ -1041,10 +1098,10 @@ function detailBody(l){
       <div class="dp-item"><div class="k">Last poll</div><div class="v" style="font-size:12px">${timeAgo(Math.max(ma.last_poll,mb.last_poll))}</div></div>
     </div>
   </div>
-  <div class="dp-sec"><h5>Endpoint A — ${a.name}</h5>
+  <div class="dp-sec"><h5>Endpoint A — ${a.ip}</h5>
     ${endpointCard(ma,l.a.if,'A')}
   </div>
-  <div class="dp-sec"><h5>Endpoint B — ${b.name}</h5>
+  <div class="dp-sec"><h5>Endpoint B — ${b.ip}</h5>
     ${endpointCard(mb,l.b.if,'B')}
   </div>
   <div class="dp-sec"><h5>Traffic Trend (RX, last 60 samples)</h5>
@@ -1194,8 +1251,8 @@ APP.PAGE_RENDER.fiber=function(){
     const u=Math.max(ma.utilization,mb.utilization);
     return `<tr data-link="${l.id}" style="cursor:pointer">
       <td><b>${l.name}</b>${l.ring?'<span class="tag" style="margin-left:6px">RING</span>':''}</td>
-      <td>${swName(l.a.sw)} <span class="muted">${l.a.if}</span></td>
-      <td>${swName(l.b.sw)} <span class="muted">${l.b.if}</span></td>
+      <td>${swIp(l.a.sw)} <span class="muted">${l.a.if}</span></td>
+      <td>${swIp(l.b.sw)} <span class="muted">${l.b.if}</span></td>
       <td>${statusPill(l.status)}</td>
       <td class="num">${fmt(ma.rx_mbps,1)} / ${fmt(ma.tx_mbps,1)}</td>
       <td class="num">${fmt(mb.rx_mbps,1)} / ${fmt(mb.tx_mbps,1)}</td>
@@ -1213,7 +1270,7 @@ APP.PAGE_RENDER.fiber=function(){
 APP.PAGE_RENDER.traffic=function(){
   const sel=$('#trLink');
   if(!sel.options.length){
-    APP.LINKS.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name+' ('+swName(l.a.sw)+'↔'+swName(l.b.sw)+')';sel.appendChild(o)});
+    APP.LINKS.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name+' ('+swIp(l.a.sw)+'↔'+swIp(l.b.sw)+')';sel.appendChild(o)});
     if(!$('#trLink').value && APP.LINKS[0]) sel.value=APP.LINKS[0].id;
   }
   drawTraffic();
@@ -1241,7 +1298,7 @@ function drawTraffic(){
   // top links
   const ranked=APP.LINKS.map(l=>({l,u:Math.max(l.a_metrics.utilization,l.b_metrics.utilization),rx:l.a_metrics.rx_mbps+l.b_metrics.rx_mbps})).sort((a,b)=>b.u-a.u);
   $('#trTop').innerHTML=`<table><thead><tr><th>Link</th><th>Endpoints</th><th class="num">Peak Util</th><th class="num">RX Mbps</th><th class="num">Capacity</th><th>Health</th></tr></thead><tbody>${
-    ranked.map(r=>`<tr data-link="${r.l.id}" style="cursor:pointer"><td><b>${r.l.name}</b></td><td class="muted">${swName(r.l.a.sw)} ↔ ${swName(r.l.b.sw)}</td><td class="num">${fmt(r.u,1)}%</td><td class="num">${fmt(r.rx,0)}</td><td class="num">${r.l.capacity_mbps/1000} Gbps</td><td>${statusPill(r.l.status)}</td></tr>`).join('')
+    ranked.map(r=>`<tr data-link="${r.l.id}" style="cursor:pointer"><td><b>${r.l.name}</b></td><td class="muted">${swIp(r.l.a.sw)} ↔ ${swIp(r.l.b.sw)}</td><td class="num">${fmt(r.u,1)}%</td><td class="num">${fmt(r.rx,0)}</td><td class="num">${r.l.capacity_mbps/1000} Gbps</td><td>${statusPill(r.l.status)}</td></tr>`).join('')
   }</tbody></table>`;
   $$('#trTop tr[data-link]').forEach(tr=>tr.onclick=()=>openDetail(tr.dataset.link));
 }
@@ -1250,15 +1307,15 @@ function drawTraffic(){
 APP.PAGE_RENDER.sfp=function(){
   // pick top 3 SFPs for gauges (highest temp / lowest rx)
   const items=APP.LINKS.flatMap(l=>{
-    return [{l,side:'a',m:l.a_metrics,sw:swName(l.a.sw),if:l.a.if},
-            {l,side:'b',m:l.b_metrics,sw:swName(l.b.sw),if:l.b.if}]
+    return [{l,side:'a',m:l.a_metrics,sw:swIp(l.a.sw),if:l.a.if},
+            {l,side:'b',m:l.b_metrics,sw:swIp(l.b.sw),if:l.b.if}]
       .filter(x=>x.m.dom_supported && x.m.oper_status!=='down');
   });
   const show=items.slice(0,3);
   $('#sfpGauges').innerHTML=show.map(x=>gaugeCard(x)).join('');
   // table
   const rows=APP.LINKS.flatMap(l=>{
-    return [['a',l.a_metrics,swName(l.a.sw),l.a.if],['b',l.b_metrics,swName(l.b.sw),l.b.if]].map(([side,m,sw,ifn])=>{
+    return [['a',l.a_metrics,swIp(l.a.sw),l.a.if],['b',l.b_metrics,swIp(l.b.sw),l.b.if]].map(([side,m,sw,ifn])=>{
       const txWarn=m.tx_dbm!=null&&m.tx_dbm>m.tx_thresh.warn;
       const rxWarn=m.rx_dbm!=null&&m.rx_dbm<m.rx_thresh.warn;
       const tempWarn=m.temp_c>m.temp_thresh.warn-15;
@@ -1298,7 +1355,7 @@ function gaugeCard(x){
 APP.PAGE_RENDER.path=function(){
   const src=$('#paSrc'),dst=$('#paDst');
   if(!src.options.length){
-    APP.SWITCHES.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name+' ('+s.ip+')';src.appendChild(o.cloneNode(true));dst.appendChild(o)});
+    APP.SWITCHES.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.ip+' ('+s.name+')';src.appendChild(o.cloneNode(true));dst.appendChild(o)});
     if(APP.SWITCHES[1]) dst.value=APP.SWITCHES[1].id;
   }
   // auto-trace on first load
@@ -1325,7 +1382,7 @@ function tracePath(){
     return {s, via, link: i>0? APP.LINKS.find(x=>(x.a.sw===path[i-1]&&x.b.sw===id)||(x.a.sw===id&&x.b.sw===path[i-1])):null};
   });
   $('#paHops').innerHTML=`
-    <div class="dp-item" style="margin-bottom:10px"><div class="k">Path</div><div class="v" style="font-size:12px">${path.map(id=>swName(id)).join(' → ')}</div></div>
+    <div class="dp-item" style="margin-bottom:10px"><div class="k">Path</div><div class="v" style="font-size:12px">${path.map(id=>swIp(id)).join(' → ')}</div></div>
     <div class="dp-grid" style="margin-bottom:10px">
       <div class="dp-item"><div class="k">Hops</div><div class="v">${path.length-1}</div></div>
       <div class="dp-item"><div class="k">VLAN</div><div class="v" style="font-size:13px">${vlan}</div></div>
@@ -1354,21 +1411,21 @@ APP.PAGE_RENDER.inventory=function(){
   if(!sel.options.length){ const all=document.createElement('option');all.value='';all.textContent='All models';sel.appendChild(all); models.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o)}); }
   const q=($('#invSearch').value||'').toLowerCase(); const mf=sel.value;
   const list=APP.SWITCHES.filter(s=>(!q||s.name.toLowerCase().indexOf(q)>-1||s.ip.indexOf(q)>-1||s.model.toLowerCase().indexOf(q)>-1)&&(!mf||s.model===mf));
-  $('#invTable').innerHTML=`<table><thead><tr><th>Switch</th><th>Management IP</th><th>Model</th><th>IOS / IOS-XE</th><th>Serial</th><th>Location</th><th>Role</th><th>Status</th><th class="num">Links</th><th class="num">Uptime</th><th>Last Poll</th></tr></thead><tbody>${
-    list.map(s=>{const links=APP.LINKS.filter(l=>l.a.sw===s.id||l.b.sw===s.id).length; return `<tr data-sw="${s.id}" style="cursor:pointer"><td><b>${s.name}</b></td><td class="mono">${s.ip}</td><td>${s.model}</td><td class="mono">${s.ios}</td><td class="mono">${s.serial}</td><td>${s.loc}</td><td><span class="tag">${s.role}</span></td><td>${statusPill(switchStatus(s.id))}</td><td class="num">${links}</td><td class="num">${(rand(20,60)|0)}d</td><td class="muted">${timeAgo(nowSec()-Math.floor(rand(2,30)))}</td></tr>`}).join('')
+  $('#invTable').innerHTML=`<table><thead><tr><th>Management IP</th><th>Switch</th><th>Model</th><th>IOS / IOS-XE</th><th>Serial</th><th>Location</th><th>Role</th><th>Status</th><th class="num">Links</th><th class="num">Uptime</th><th>Last Poll</th></tr></thead><tbody>${
+    list.map(s=>{const links=APP.LINKS.filter(l=>l.a.sw===s.id||l.b.sw===s.id).length; return `<tr data-sw="${s.id}" style="cursor:pointer"><td class="mono"><b>${s.ip}</b></td><td>${s.name}</td><td>${s.model}</td><td class="mono">${s.ios}</td><td class="mono">${s.serial}</td><td>${s.loc}</td><td><span class="tag">${s.role}</span></td><td>${statusPill(switchStatus(s.id))}</td><td class="num">${links}</td><td class="num">${(rand(20,60)|0)}d</td><td class="muted">${timeAgo(nowSec()-Math.floor(rand(2,30)))}</td></tr>`}).join('')
   }</tbody></table>`;
   $$('#invTable tr[data-sw]').forEach(tr=>tr.onclick=()=>openSwitchDetail(tr.dataset.sw));
 };
 
 // ---------- DISCOVERY ----------
 APP.DISC_POOL=[
-  {ip:'10.10.10.21',name:'SW-ACC-09',model:'Catalyst 9300',ios:'17.06.03',sysdescr:'Cisco IOS Software [Fuji], Catalyst L3 Switch Software',status:'discovered'},
-  {ip:'10.10.10.22',name:'SW-ACC-10',model:'Catalyst 9200',ios:'17.04.01',sysdescr:'Cisco IOS Software [Amur], Catalyst L3 Switch Software',status:'discovered'},
-  {ip:'10.10.10.23',name:'unknown-23',model:'Catalyst 2960X',ios:'15.2(7)E5',sysdescr:'Cisco IOS Software, Catalyst L2 Switch Software',status:'discovered'},
-  {ip:'10.10.10.24',name:'(non-Cisco)',model:'Linux router',ios:'—',sysdescr:'Linux 5.10 — Ubiquiti EdgeRouter',status:'non-cisco'},
-  {ip:'10.10.10.25',name:'—',model:'—',ios:'—',sysdescr:'no SNMP response',status:'snmp-failed'},
-  {ip:'10.10.10.26',name:'SW-ACC-11',model:'Catalyst 3650',ios:'16.12.05',sysdescr:'Cisco IOS Software [Everest], Catalyst L3 Switch Software',status:'discovered'},
-  {ip:'10.10.10.27',name:'SW-CORE-01',model:'Catalyst 9300',ios:'17.06.03',sysdescr:'already registered',status:'registered'},
+  {ip:'10.10.100.21',name:'SW-ACC-09',model:'Catalyst 9300',ios:'17.06.03',sysdescr:'Cisco IOS Software [Fuji], Catalyst L3 Switch Software',status:'discovered'},
+  {ip:'10.10.100.22',name:'SW-ACC-10',model:'Catalyst 9200',ios:'17.04.01',sysdescr:'Cisco IOS Software [Amur], Catalyst L3 Switch Software',status:'discovered'},
+  {ip:'10.10.100.23',name:'unknown-23',model:'Catalyst 2960X',ios:'15.2(7)E5',sysdescr:'Cisco IOS Software, Catalyst L2 Switch Software',status:'discovered'},
+  {ip:'10.10.100.24',name:'(non-Cisco)',model:'Linux router',ios:'—',sysdescr:'Linux 5.10 — Ubiquiti EdgeRouter',status:'non-cisco'},
+  {ip:'10.10.100.25',name:'—',model:'—',ios:'—',sysdescr:'no SNMP response',status:'snmp-failed'},
+  {ip:'10.10.100.26',name:'SW-ACC-11',model:'Catalyst 3650',ios:'16.12.05',sysdescr:'Cisco IOS Software [Everest], Catalyst L3 Switch Software',status:'discovered'},
+  {ip:'10.10.100.27',name:'SW-ACC-12',model:'Catalyst 9300',ios:'17.06.03',sysdescr:'Cisco IOS Software, Catalyst L3 Switch Software',status:'discovered'},
 ];
 APP.PAGE_RENDER.discovery=function(){
   renderHistory();
@@ -1391,7 +1448,7 @@ function startScan(){
     toast('Scan rejected — outside authorized scope','bad');
     return;
   }
-  warn.innerHTML=`<div class="pill up"><span class="d"></span>AUTHORIZED</div> <span class="muted">Within scope ${cidr}. Proceeding with SNMPv3 read-only probe.</span>`;
+  warn.innerHTML=`<div class="pill up"><span class="d"></span>AUTHORIZED</div> <span class="muted">Within scope ${cidr}. Proceeding with SNMP probe (${strategyLabel()}).</span>`;
   $('#dcProgressWrap').style.display='block';
   $('#dcResults').innerHTML='<div class="empty">Scanning…</div>';
   APP.DISC_RESULTS=[];
@@ -1428,22 +1485,73 @@ function finishScan(cancelled){
   APP.SCAN.running=false; $('#dcScan').disabled=false;
   $('#dcScanLabel').textContent=cancelled?'Scan stopped':'Scan completed';
   const id='10'+(Math.floor(Math.random()*90)+10);
-  APP.SCAN_HISTORY.unshift({id,range:$('#dcCidr').value,scope:cidrInScopeLabel($('#dcCidr').value),profile:$('#dcProfile').value,status:'completed',progress:100,started:nowSec()-120,finished:nowSec(),found:APP.DISC_RESULTS.filter(r=>r.status==='discovered'||r.status==='registered').length,by:'admin'});
+  APP.SCAN_HISTORY.unshift({id,range:$('#dcCidr').value,scope:cidrInScopeLabel($('#dcCidr').value),profile:strategyLabel(),status:'completed',progress:100,started:nowSec()-120,finished:nowSec(),found:APP.DISC_RESULTS.filter(r=>r.status==='discovered'||r.status==='registered').length,by:'admin'});
   renderHistory();
   toast(cancelled?'Scan stopped':'Scan completed — '+APP.DISC_RESULTS.filter(r=>r.status==='discovered').length+' eligible devices','ok');
 }
+function strategyLabel(){
+  const s=$('#dcStrategy')?$('#dcStrategy').value:'auto';
+  const en=enabledVersions();
+  return s==='auto' ? 'auto '+en.join('·') : en[0]+' only';
+}
+function enabledVersions(){
+  const s=$('#dcStrategy')?$('#dcStrategy').value:'auto';
+  if(s!=='auto')return [s];
+  const en=[];
+  if($('#dcV1en')&&$('#dcV1en').checked)en.push('v1');
+  if($('#dcV2en')&&$('#dcV2en').checked)en.push('v2c');
+  if($('#dcV3en')&&$('#dcV3en').checked)en.push('v3');
+  return en.length?en:['v1','v2c','v3'];
+}
+// Per-version probe outcome. Simulation only — no real SNMP packets.
+// Capability rules model what each device class typically responds to.
+function versionNote(v,isCisco,iosNew){
+  if(v==='v1')  return 'community match (legacy read-only)';
+  if(v==='v2c') return 'community match · IF-MIB 64-bit';
+  if(v==='v3')  return isCisco ? (iosNew?'authPriv OK · usmUser matched':'authNoPriv · partial USM support') : 'usmUser matched';
+}
+function versionFailNote(v,isCisco,iosNew){
+  if(v==='v1')  return isCisco&&iosNew ? 'v1 disabled (security policy)' : 'community mismatch / ACL deny';
+  if(v==='v2c') return 'community mismatch / access-list deny';
+  if(v==='v3')  return 'usmUser not found / auth failure';
+}
+function probeVersions(r){
+  const attempt=enabledVersions();
+  const isCisco=/cisco/i.test(r.sysdescr)||/catalyst/i.test(r.model);
+  const iosNew=/17\./.test(r.ios||'');
+  // device capability for each version (independent of whether we attempt it)
+  let cap={v1:!isCisco?(Math.random()<0.4):(iosNew?false:true),
+           v2c:!isCisco?(Math.random()<0.6):true,
+           v3:!isCisco?(Math.random()<0.3):(iosNew?true:Math.random()<0.5)};
+  if(r.status==='snmp-failed'){cap.v1=cap.v2c=cap.v3=false;}
+  const out={};
+  ['v1','v2c','v3'].forEach(v=>{
+    if(attempt.indexOf(v)<0){ out[v]={ok:false,rtt:0,note:'not attempted',attempted:false}; return; }
+    const ok=cap[v];
+    out[v]={ok, rtt:ok?(8+Math.floor(Math.random()*30)):0,
+            note: r.status==='snmp-failed'?'no response':(ok?versionNote(v,isCisco,iosNew):versionFailNote(v,isCisco,iosNew)),
+            attempted:true};
+  });
+  r.bestVersion=['v3','v2c','v1'].find(v=>out[v].attempted&&out[v].ok)||null;
+  r.versions=out;
+  return r;
+}
 function probeResult(ip){
-  // already in inventory -> registered
   const inv = APP.SWITCHES.find(s=>s.ip===ip);
-  if(inv) return {ip,name:inv.name,model:inv.model,ios:inv.ios,sysdescr:'already registered — '+inv.name+' ('+inv.serial+')',status:'registered'};
-  const last=+ip.split('.').pop();
-  const base=APP.DISC_POOL.find(p=>p.ip===ip);
-  if(base) return {...base};
-  // synthesize
-  if(last%7===0) return {ip,name:'—',model:'—',ios:'—',sysdescr:'ICMP up, SNMP timeout',status:'snmp-failed'};
-  if(last%5===0) return {ip,name:'host-'+last,model:'non-Cisco',ios:'—',sysdescr:'Juniper JUNOS 21.4',status:'non-cisco'};
-  const models=['Catalyst 9300','Catalyst 9200','Catalyst 3650','Catalyst 2960X'];
-  return {ip,name:'SW-NEW-'+last,model:pick(models),ios:pick(['17.06.03','17.04.01','16.12.05','15.2(7)E5']),sysdescr:'Cisco IOS Software, Catalyst Switch Software',status:'discovered'};
+  let r;
+  if(inv) r={ip,name:inv.name,model:inv.model,ios:inv.ios,sysdescr:'already registered — '+inv.name+' ('+inv.serial+')',status:'registered'};
+  else {
+    const last=+ip.split('.').pop();
+    const base=APP.DISC_POOL.find(p=>p.ip===ip);
+    if(base) r={...base};
+    else if(last%7===0) r={ip,name:'—',model:'—',ios:'—',sysdescr:'ICMP up, SNMP timeout',status:'snmp-failed'};
+    else if(last%5===0) r={ip,name:'host-'+last,model:'non-Cisco',ios:'—',sysdescr:'Juniper JUNOS 21.4',status:'non-cisco'};
+    else {
+      const models=['Catalyst 9300','Catalyst 9200','Catalyst 3650','Catalyst 2960X'];
+      r={ip,name:'SW-NEW-'+last,model:pick(models),ios:pick(['17.06.03','17.04.01','16.12.05','15.2(7)E5']),sysdescr:'Cisco IOS Software, Catalyst Switch Software',status:'discovered'};
+    }
+  }
+  return probeVersions(r);
 }
 function renderResults(){
   const groups={discovered:[],'snmp-failed':[],'non-cisco':[],registered:[],duplicate:[]};
@@ -1451,36 +1559,88 @@ function renderResults(){
   const order=['discovered','registered','non-cisco','snmp-failed'];
   const labels={discovered:'Discovered',registered:'Already registered','non-cisco':'Non-Cisco','snmp-failed':'SNMP failed'};
   const counts={discovered:groups.discovered.length,registered:groups.registered.length,'non-cisco':groups['non-cisco'].length,'snmp-failed':groups['snmp-failed'].length};
+  const vorder=['v1','v2c','v3'];
+  function chips(r){
+    if(!r.versions)return '';
+    return '<span class="vchips">'+vorder.map(v=>{
+      const o=r.versions[v]; if(!o)return '';
+      if(!o.attempted) return `<span class="vchip" title="not attempted">${v}</span>`;
+      const cls=(o.ok?'ok':'fail')+(r.bestVersion===v?' best':'');
+      return `<span class="vchip ${cls}" title="${o.note} · ${o.rtt||0}ms">${v}</span>`;
+    }).join('')+'</span>';
+  }
+  function detailRow(r){
+    if(!r.versions)return '';
+    return `<div class="disc-detail" data-detail="${r.ip}">
+      <div class="muted" style="margin-bottom:6px;font-size:10px">Per-version probe outcome — click a chip above to collapse. Register creates an SNMP profile for that version.</div>
+      ${vorder.map(v=>{
+        const o=r.versions[v]; const best=r.bestVersion===v;
+        const pill = !o.attempted ? '<span class="muted">skipped</span>' : (o.ok?'<span class="pill up"><span class="d"></span>OK</span>':'<span class="pill down"><span class="d"></span>FAIL</span>');
+        return `<div class="vrow">
+          <span class="vlab">${v}</span>
+          <span class="vres">${pill} ${o.note}${best?' · <b style="color:var(--cisco)">recommended</b>':''}</span>
+          <span class="vrtt">${o.attempted&&o.rtt?o.rtt+'ms':'—'}</span>
+          ${r.status==='discovered'&&o.attempted&&o.ok?`<button class="btn sm primary" data-regv="${r.ip}|${v}">Register ${v}</button>`:''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
   $('#dcResults').innerHTML=`
     <div class="flex gap" style="gap:16px;margin-bottom:12px">
       ${order.map(k=>`<div><div style="font-size:18px;font-weight:700;color:#fff">${counts[k]}</div><div class="muted" style="font-size:10px;text-transform:uppercase">${labels[k]}</div></div>`).join('')}
+      <div style="margin-left:auto;align-self:flex-end"><div class="muted" style="font-size:10px;text-transform:uppercase">Strategy</div><div style="font-size:12px;color:var(--cisco);font-weight:600">${strategyLabel()}</div></div>
     </div>
-    <div class="scroll-y" style="max-height:360px">
+    <div class="scroll-y" style="max-height:520px">
     ${APP.DISC_RESULTS.map(r=>{
       const reg = r.status==='registered';
       const elig = r.status==='discovered';
-      return `<div class="disc-row">
-        <span class="ip">${r.ip}</span>
-        <div class="name">${r.name}<div class="mdl">${r.model} ${r.ios!=='—'?'· IOS '+r.ios:''}</div></div>
-        <span class="muted" style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.sysdescr}</span>
-        ${r.status==='discovered'?'<span class="pill up"><span class="d"></span>discovered</span>':r.status==='registered'?'<span class="pill info">registered</span>':r.status==='non-cisco'?'<span class="pill unknown"><span class="d"></span>non-cisco</span>':'<span class="pill down"><span class="d"></span>snmp-failed</span>'}
-        ${elig?`<button class="btn sm primary" data-reg="${r.ip}">Register</button>`:reg?`<button class="btn sm" disabled>in inventory</button>`:''}
+      const open = !!r._open;
+      return `<div class="disc-wrap">
+        <div class="disc-row" data-row="${r.ip}" style="cursor:pointer">
+          <span class="ip">${r.ip}</span>
+          <div class="name">${r.name}<div class="mdl">${r.model} ${r.ios!=='—'?'· IOS '+r.ios:''}</div></div>
+          ${chips(r)}
+          <span class="muted" style="font-size:10px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.sysdescr}</span>
+          ${r.status==='discovered'?'<span class="pill up"><span class="d"></span>discovered</span>':r.status==='registered'?'<span class="pill info">registered</span>':r.status==='non-cisco'?'<span class="pill unknown"><span class="d"></span>non-cisco</span>':'<span class="pill down"><span class="d"></span>snmp-failed</span>'}
+          ${elig?`<button class="btn sm primary" data-reg="${r.ip}">Register${r.bestVersion?' ('+r.bestVersion+')':''}</button>`:reg?`<button class="btn sm" disabled>in inventory</button>`:''}
+        </div>
+        ${open?detailRow(r):''}
       </div>`;
     }).join('')}
     </div>`;
-  $$('#dcResults [data-reg]').forEach(b=>b.onclick=()=>registerDevice(b.dataset.reg));
+  $$('#dcResults [data-row]').forEach(el=>el.onclick=(e)=>{ if(e.target.closest('button'))return; const r=APP.DISC_RESULTS.find(x=>x.ip===el.dataset.row); if(r){r._open=!r._open; renderResults();} });
+  $$('#dcResults [data-reg]').forEach(b=>b.onclick=(e)=>{e.stopPropagation();registerDevice(b.dataset.reg)});
+  $$('#dcResults [data-regv]').forEach(b=>b.onclick=(e)=>{e.stopPropagation();const p=b.dataset.regv.split('|');registerVersion(p[0],p[1])});
+}
+function registerVersion(ip, version, silent){
+  const r=APP.DISC_RESULTS.find(x=>x.ip===ip);
+  if(!r||!r.versions||!r.versions[version]||!r.versions[version].ok)return false;
+  const id='prof-'+ip.replace(/\./g,'-')+'-'+version;
+  if(!APP.SNMP_PROFILES.find(p=>p.id===id)){
+    const base={id, name:ip+' · SNMP'+version.toUpperCase()+(r.name!=='—'?' · '+r.name:''), targets: ip, src:'discovery'};
+    let prof;
+    if(version==='v3'){
+      const lvl=$('#dcV3level')?$('#dcV3level').value:'authPriv';
+      prof={...base, version:'v3', user:($('#dcV3user')&&$('#dcV3user').value)||'mon-ro', auth:($('#dcV3auth')?$('#dcV3auth').value:'SHA'), priv:($('#dcV3priv')?$('#dcV3priv').value:'AES-128'), level:lvl};
+    } else {
+      prof={...base, version, community:'••••••'};
+    }
+    APP.SNMP_PROFILES.unshift(prof);
+  }
+  r.status='registered'; r._open=false;
+  if(!silent) toast(ip+' registered with SNMP'+version.toUpperCase(),'ok');
+  renderResults();
+  if($('#set-snmp')&&$('#set-snmp').classList.contains('active')) renderSettings('snmp');
+  return true;
 }
 function registerDevice(ip){
   const r=APP.DISC_RESULTS.find(x=>x.ip===ip); if(!r)return;
-  r.status='registered';
-  toast(r.name+' registered into inventory','ok');
-  renderResults();
+  registerVersion(ip, r.bestVersion||'v2c');
 }
 function registerAll(){
   let n=0;
-  APP.DISC_RESULTS.forEach(r=>{ if(r.status==='discovered'){ r.status='registered'; n++; } });
-  toast(n+' eligible devices registered','ok');
-  renderResults();
+  APP.DISC_RESULTS.forEach(r=>{ if(r.status==='discovered' && r.bestVersion){ if(registerVersion(r.ip, r.bestVersion, true)) n++; } });
+  toast(n+' eligible devices registered (best version per device)','ok');
 }
 // CIDR helpers (simplified, supports /24-/28)
 function cidrToRange(cidr){
@@ -1539,10 +1699,10 @@ function generateReport(){
     const ranked=APP.LINKS.map(l=>({l,rx:l.a_metrics.rx_mbps+l.b_metrics.rx_mbps,u:Math.max(l.a_metrics.utilization,l.b_metrics.utilization)})).sort((a,b)=>b.rx-a.rx);
     html=`<h4 style="margin-bottom:10px">Traffic Peaks — ${rangeLabel}</h4>
     <table><thead><tr><th>Link</th><th>Endpoints</th><th class="num">Peak RX</th><th class="num">Peak Util</th><th class="num">Capacity</th></tr></thead><tbody>${
-      ranked.map(r=>`<tr><td><b>${r.l.name}</b></td><td class="muted">${swName(r.l.a.sw)} ↔ ${swName(r.l.b.sw)}</td><td class="num">${fmt(r.rx,0)} Mbps</td><td class="num">${fmt(r.u,1)}%</td><td class="num">${r.l.capacity_mbps/1000} Gbps</td></tr>`).join('')
+      ranked.map(r=>`<tr><td><b>${r.l.name}</b></td><td class="muted">${swIp(r.l.a.sw)} ↔ ${swIp(r.l.b.sw)}</td><td class="num">${fmt(r.rx,0)} Mbps</td><td class="num">${fmt(r.u,1)}%</td><td class="num">${r.l.capacity_mbps/1000} Gbps</td></tr>`).join('')
     }</tbody></table>`;
   } else if(type==='optical'){
-    const items=APP.LINKS.flatMap(l=>[['A',l.a_metrics,swName(l.a.sw),l.a.if,l.name],['B',l.b_metrics,swName(l.b.sw),l.b.if,l.name]].filter(x=>x[1].dom_supported).map(x=>x));
+    const items=APP.LINKS.flatMap(l=>[['A',l.a_metrics,swIp(l.a.sw),l.a.if,l.name],['B',l.b_metrics,swIp(l.b.sw),l.b.if,l.name]].filter(x=>x[1].dom_supported).map(x=>x));
     html=`<h4 style="margin-bottom:10px">Optical Warnings — ${rangeLabel}</h4>
     <table><thead><tr><th>Switch</th><th>Interface</th><th>Link</th><th class="num">TX dBm</th><th class="num">RX dBm</th><th class="num">Temp °C</th><th>State</th></tr></thead><tbody>${
       items.filter(x=>x[1].temp_c>45||x[1].rx_dbm<-8).map(x=>`<tr><td>${x[2]}</td><td class="mono">${x[3]}</td><td>${x[4]}</td><td class="num">${fmt(x[1].tx_dbm,2)}</td><td class="num">${fmt(x[1].rx_dbm,2)}</td><td class="num">${fmt(x[1].temp_c,1)}</td><td><span class="pill warn">warn</span></td></tr>`).join('') || '<tr><td colspan="7" class="empty">No optical warnings in period</td></tr>'
@@ -1563,9 +1723,19 @@ APP.PAGE_RENDER.settings=function(){
 function renderSettings(tab){
   if(tab==='snmp'){
     $('#set-snmp').innerHTML=`<div class="list-item" style="flex-direction:column;align-items:stretch">
-      ${APP.SNMP_PROFILES.map(p=>`<div class="list-item"><div class="li-h"><b>${p.name}</b><div class="sub">user: ${p.user} · auth: ${p.auth} · priv: ${p.priv} · level: ${p.level} · targets: ${p.targets}</div></div><div class="flex gap"><span class="pill up"><span class="d"></span>active</span><button class="btn sm">Edit</button></div></div>`).join('')}
+      ${APP.SNMP_PROFILES.map(p=>{
+        const vb = p.version==='v3'?'<span class="tag" style="background:rgba(74,158,255,.15);color:var(--cisco)">v3</span>'
+                 : p.version==='v2c'?'<span class="tag" style="background:rgba(63,185,80,.15);color:var(--green)">v2c</span>'
+                 : '<span class="tag" style="background:rgba(255,159,64,.15);color:#ff9f40">v1</span>';
+        const cred = p.version==='v3'
+          ? `user: ${p.user} · auth: ${p.auth} · priv: ${p.priv} · level: ${p.level}`
+          : `community: ${p.community||'••••••'}`;
+        return `<div class="list-item"><div class="li-h"><b>${vb} ${p.name}</b><div class="sub">${cred} · targets: ${p.targets}${p.src?' · via '+p.src:''}</div></div><div class="flex gap"><span class="pill up"><span class="d"></span>active</span><button class="btn sm" data-edit="${p.id}">Edit</button></div></div>`;
+      }).join('')}
     </div>
-    <div class="mt12"><button class="btn primary">+ Add SNMP Profile</button></div>`;
+    <div class="mt12"><button class="btn primary" id="pmAddBtn">+ Add SNMP Profile</button></div>`;
+    $$('#set-snmp [data-edit]').forEach(b=>b.onclick=()=>openProfileModal(b.dataset.edit));
+    $('#pmAddBtn').onclick=()=>openProfileModal();
   } else if(tab==='poll'){
     $('#set-poll').innerHTML=`<table><thead><tr><th>Metric</th><th>Interval</th><th>Method</th><th>Enabled</th></tr></thead><tbody>${
       APP.POLL_SCHEDULES.map(p=>`<tr><td><b>${p.metric}</b></td><td class="mono">${p.interval}</td><td class="muted">${p.method}</td><td><div class="toggle on" data-poll></div></td></tr>`).join('')
@@ -1591,6 +1761,73 @@ function renderSettings(tab){
   $('#set-'+tab).classList.add('active');
 }
 
+/* ---- SNMP profile add/edit modal ---- */
+function openProfileModal(editId){
+  const edit = editId ? APP.SNMP_PROFILES.find(p=>p.id===editId) : null;
+  const v = edit ? edit.version : 'v2c';
+  const esc = s => (s==null?'':String(s)).replace(/"/g,'&quot;');
+  $('#pmTitle').textContent = edit ? 'Edit SNMP Profile' : 'Add SNMP Profile';
+  $('#pmBody').innerHTML = `
+    <div class="mrow"><label>Profile name</label><input class="input" id="pmName" placeholder="e.g. SNMPv2c RO — floor-3" value="${esc(edit?edit.name:'')}"></div>
+    <div class="mrow"><label>SNMP version</label><select id="pmVer" onchange="toggleProfileFields()">
+      <option value="v2c" ${v==='v2c'?'selected':''}>SNMPv2c</option>
+      <option value="v1"  ${v==='v1'?'selected':''}>SNMPv1 (legacy)</option>
+      <option value="v3"  ${v==='v3'?'selected':''}>SNMPv3 (USM)</option>
+    </select></div>
+    <div id="pmV2Fields" class="v-fields">
+      <div class="mrow"><label>Community string</label><input class="input" type="password" id="pmComm" placeholder="community ••••••" value="${esc(edit&&edit.community?edit.community:'')}"></div>
+    </div>
+    <div id="pmV3Fields" class="v-fields" style="display:none">
+      <div class="mrow"><label>USM user</label><input class="input" id="pmUser" placeholder="mon-ro" value="${esc(edit&&edit.user?edit.user:'')}"></div>
+      <div class="mrow"><label>Auth protocol</label><select id="pmAuth"><option>SHA</option><option>MD5</option><option>none</option></select></div>
+      <div class="mrow"><label>Priv protocol</label><select id="pmPriv"><option>AES-128</option><option>DES</option><option>none</option></select></div>
+      <div class="mrow"><label>Security level</label><select id="pmLevel"><option>authPriv</option><option>authNoPriv</option><option>noAuthNoPriv</option></select></div>
+    </div>
+    <div class="mrow"><label>Target scope</label><input class="input" id="pmTargets" placeholder="10.10.100.0/24" value="${esc(edit&&edit.targets?edit.targets:'10.10.100.0/24')}"></div>
+    <div class="flex gap" style="justify-content:flex-end;margin-top:14px">
+      <button class="btn" id="pmCancel">Cancel</button>
+      <button class="btn primary" id="pmSave">${edit?'Save changes':'Add profile'}</button>
+    </div>`;
+  toggleProfileFields();
+  if(edit && edit.version==='v3'){
+    if(edit.auth) $('#pmAuth').value=edit.auth;
+    if(edit.priv) $('#pmPriv').value=edit.priv;
+    if(edit.level) $('#pmLevel').value=edit.level;
+  }
+  $('#pmClose').onclick=closeProfileModal;
+  $('#pmCancel').onclick=closeProfileModal;
+  $('#pmSave').onclick=()=>saveProfileFromModal(editId);
+  const m=$('#profileModal'); m.style.display='flex'; m.onclick=e=>{if(e.target===m) closeProfileModal();};
+  setTimeout(()=>$('#pmName').focus(),30);
+}
+function toggleProfileFields(){
+  if(!$('#pmVer'))return;
+  const v=$('#pmVer').value;
+  $('#pmV2Fields').style.display = v==='v3'?'none':'block';
+  $('#pmV3Fields').style.display = v==='v3'?'block':'none';
+}
+function closeProfileModal(){ const m=$('#profileModal'); if(m) m.style.display='none'; }
+function saveProfileFromModal(editId){
+  const v=$('#pmVer').value;
+  const name=$('#pmName').value.trim();
+  if(!name){ toast('Profile name is required','warn'); $('#pmName').focus(); return; }
+  const targets=$('#pmTargets').value.trim() || '10.10.100.0/24';
+  const base = editId ? APP.SNMP_PROFILES.find(p=>p.id===editId) : {id:'snmp-'+Date.now().toString(36), src:'manual'};
+  base.version=v; base.name=name; base.targets=targets;
+  if(v==='v3'){
+    base.user=$('#pmUser').value.trim()||'mon-ro';
+    base.auth=$('#pmAuth').value; base.priv=$('#pmPriv').value; base.level=$('#pmLevel').value;
+    delete base.community;
+  } else {
+    base.community=$('#pmComm').value || '••••••';
+    delete base.user; delete base.auth; delete base.priv; delete base.level;
+  }
+  if(!editId){ APP.SNMP_PROFILES.push(base); toast(name+' added','ok'); }
+  else { toast(name+' updated','ok'); }
+  closeProfileModal();
+  renderSettings('snmp');
+}
+
 /* ============================================================
    8. INIT & WIRING
    ============================================================ */
@@ -1599,7 +1836,7 @@ function init(){
   $$('.nav a').forEach(a=>a.onclick=()=>navigate(a.dataset.page));
   // detail panel close
   $('#dpClose').onclick=closeDetail;
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetail()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeProfileModal();closeDetail()}});
   // topology buttons
   $('#btnTopoRefresh').onclick=()=>{ topoSVG(null,null,$('#topoSvg')); toast('Topology refreshed','ok'); };
   $('#btnTopoSimCut').onclick=()=>{
@@ -1622,8 +1859,7 @@ function init(){
   $('#dcScan').onclick=startScan;
   $('#dcStop').onclick=()=>{ APP.SCAN.running=false; };
   $('#dcRegAll').onclick=registerAll;
-  // fill SNMP profile dropdown
-  APP.SNMP_PROFILES.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;$('#dcProfile').appendChild(o)});
+  // discovery: profile strategy + per-version (v1/v2c/v3) credentials are handled inline in the form
   // alerts
   $('#alSev').onchange=APP.PAGE_RENDER.alerts;
   $('#alStat').onchange=APP.PAGE_RENDER.alerts;
