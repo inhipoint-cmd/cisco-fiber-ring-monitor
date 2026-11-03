@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cisco Fiber Ring Monitoring Dashboard</title>
+<style>
+/* ===== Reset & base ===== */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e1a; --bg2:#0f1422; --panel:#131a2b; --panel2:#1a2236; --panel3:#222c44;
+  --border:#243049; --border2:#2f3d5c;
+  --text:#e6edf5; --text2:#9fb0c9; --text3:#6b7a96;
+  --cisco:#00bceb; --cisco2:#0066cc; --accent:#4a9eff;
+  --green:#2ecc71; --blue:#3b82f6; --orange:#f39c12; --red:#e74c3c; --grey:#6b7a96; --purple:#9b59b6;
+  --shadow:0 4px 20px rgba(0,0,0,.35);
+}
+html,body{height:100%}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13px;overflow:hidden}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#3a4a6e}
+
+/* ===== Layout ===== */
+#app{display:flex;height:100vh}
+#sidebar{width:236px;flex-shrink:0;background:linear-gradient(180deg,#0c1220,#0a0e1a);border-right:1px solid var(--border);display:flex;flex-direction:column}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ===== Sidebar ===== */
+.brand{padding:18px 18px 14px;border-bottom:1px solid var(--border)}
+.brand .logo{display:flex;align-items:center;gap:10px}
+.brand .logo .mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--cisco),var(--cisco2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:18px;box-shadow:0 0 14px rgba(0,188,235,.4)}
+.brand .logo .txt b{font-size:14px;color:#fff;display:block;line-height:1.2}
+.brand .logo .txt span{font-size:10px;color:var(--text3);letter-spacing:.5px}
+.nav{flex:1;overflow-y:auto;padding:10px 8px}
+.nav .nav-section{font-size:9px;text-transform:uppercase;color:var(--text3);letter-spacing:1px;padding:14px 12px 6px;font-weight:600}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:7px;color:var(--text2);text-decoration:none;font-size:12.5px;cursor:pointer;margin-bottom:1px;transition:.12s;border:1px solid transparent}
+.nav a:hover{background:var(--panel);color:var(--text)}
+.nav a.active{background:linear-gradient(90deg,rgba(0,188,235,.14),transparent);color:var(--cisco);border-color:rgba(0,188,235,.18)}
+.nav a .ico{width:18px;text-align:center;font-size:14px;flex-shrink:0}
+.nav a .badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600}
+.nav a .badge.warn{background:var(--orange)}
+.nav a .badge.info{background:var(--accent)}
+.sidebar-foot{padding:10px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3)}
+.sidebar-foot .row{display:flex;justify-content:space-between;padding:3px 0}
+.sidebar-foot .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;box-shadow:0 0 6px var(--green)}
+.sidebar-foot .dot.warn{background:var(--orange);box-shadow:0 0 6px var(--orange)}
+
+/* ===== Topbar ===== */
+#topbar{height:54px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:14px;flex-shrink:0}
+#topbar .page-title{font-size:15px;font-weight:600;color:#fff;display:flex;align-items:center;gap:9px}
+#topbar .page-title .crumb{color:var(--text3);font-weight:400;font-size:12px}
+#topbar .spacer{flex:1}
+.topbar-stat{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text2);padding:6px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:7px}
+.topbar-stat .v{color:#fff;font-weight:600}
+.topbar-stat .v.ok{color:var(--green)} .topbar-stat .v.bad{color:var(--red)} .topbar-stat .v.warn{color:var(--orange)}
+#liveClock{font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ===== Content ===== */
+#content{flex:1;overflow-y:auto;padding:18px}
+.page{display:none}
+.page.active{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ===== Cards / grid ===== */
+.grid{display:grid;gap:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.card .hd{padding:12px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card .hd h3{font-size:12.5px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px}
+.card .hd .sub{font-size:10.5px;color:var(--text3)}
+.card .bd{padding:15px}
+.card .hd .actions{display:flex;gap:7px}
+
+.kpis{grid-template-columns:repeat(6,1fr)}
+@media(max-width:1500px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--cisco)}
+.kpi.ok::before{background:var(--green)} .kpi.warn::before{background:var(--orange)} .kpi.bad::before{background:var(--red)} .kpi.grey::before{background:var(--grey)}
+.kpi .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.kpi .val{font-size:26px;font-weight:700;color:#fff;line-height:1}
+.kpi .val .unit{font-size:12px;color:var(--text2);font-weight:400;margin-left:3px}
+.kpi .meta{font-size:10.5px;color:var(--text2);margin-top:7px;display:flex;gap:10px}
+.kpi .meta .up{color:var(--green)} .kpi .meta .down{color:var(--red)}
+
+/* ===== Tables ===== */
+table{width:100%;border-collapse:collapse;font-size:12px}
+.tbl-wrap{overflow-x:auto}
+table th{background:var(--bg2);color:var(--text2);font-weight:600;text-align:left;padding:9px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0}
+table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+table tr:hover td{background:rgba(74,158,255,.05)}
+table tr.sel td{background:rgba(0,188,235,.1)}
+table td.mono{font-family:'SF Mono',Consolas,monospace;font-size:11.5px}
+table .num{text-align:right;font-variant-numeric:tabular-nums}
+table th.num{text-align:right}
+
+/* ===== Status pills ===== */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:11px;font-size:10.5px;font-weight:600;white-space:nowrap}
+.pill .d{width:6px;height:6px;border-radius:50%}
+.pill.up{background:rgba(46,204,113,.15);color:var(--green)} .pill.up .d{background:var(--green);box-shadow:0 0 5px var(--green)}
+.pill.down{background:rgba(231,76,60,.15);color:var(--red)} .pill.down .d{background:var(--red);box-shadow:0 0 5px var(--red)}
+.pill.degraded{background:rgba(243,156,18,.15);color:var(--orange)} .pill.degraded .d{background:var(--orange)}
+.pill.unknown{background:rgba(107,122,150,.15);color:var(--grey)} .pill.unknown .d{background:var(--grey)}
+.pill.failover{background:rgba(155,89,182,.15);color:var(--purple)} .pill.failover .d{background:var(--purple)}
+.pill.moderate{background:rgba(59,130,246,.15);color:var(--blue)} .pill.moderate .d{background:var(--blue)}
+.pill.info{background:rgba(74,158,255,.15);color:var(--accent)}
+.pill.warn{background:rgba(243,156,18,.15);color:var(--orange)}
+.pill.crit{background:rgba(231,76,60,.15);color:var(--red)}
+.pill.major{background:rgba(231,76,60,.12);color:var(--red)}
+.pill.healthy{background:rgba(46,204,113,.15);color:var(--green)}
+.pill.partitioned{background:rgba(231,76,60,.15);color:var(--red)}
+.pill.ghost{background:transparent;color:var(--text3)}
+
+/* ===== Buttons ===== */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:7px;border:1px solid var(--border2);background:var(--panel2);color:var(--text);font-size:11.5px;cursor:pointer;font-weight:500;transition:.12s;white-space:nowrap}
+.btn:hover{background:var(--panel3);border-color:var(--accent)}
+.btn.primary{background:linear-gradient(135deg,var(--cisco),var(--cisco2));border-color:transparent;color:#fff;font-weight:600}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.danger{background:rgba(231,76,60,.18);border-color:rgba(231,76,60,.4);color:var(--red)}
+.btn.sm{padding:4px 9px;font-size:10.5px}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ===== Forms ===== */
+.input,select,.textarea{background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:8px 11px;border-radius:7px;font-size:12px;font-family:inherit;width:100%}
+.input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(74,158,255,.15)}
+label.fl{font-size:10.5px;color:var(--text2);display:block;margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+.form-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.form-row>div{flex:1;min-width:140px}
+.field{margin-bottom:13px}
+
+/* ===== Topology ===== */
+#topoSvg{width:100%;height:560px;background:radial-gradient(ellipse at center,#0d1426,#080b14);border-radius:8px;display:block}
+.topo-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--text2);align-items:center}
+.legend .li{display:flex;align-items:center;gap:6px}
+.legend .sw{width:14px;height:3px;border-radius:2px}
+.legend .nd{width:11px;height:11px;border-radius:50%}
+.node-circle{cursor:pointer;transition:.15s}
+.node-circle:hover{filter:brightness(1.3)}
+.node-label{font-size:10px;fill:var(--text2);text-anchor:middle;font-weight:600;pointer-events:none}
+.node-sub{font-size:8.5px;fill:var(--text3);text-anchor:middle;pointer-events:none}
+.link-line{cursor:pointer;transition:.15s}
+.link-line:hover{stroke-width:6;filter:brightness(1.4)}
+.link-hit{stroke:transparent;stroke-width:14;fill:none;cursor:pointer}
+
+/* ===== Detail panel (slide) ===== */
+#detailPanel{position:fixed;top:0;right:-460px;width:450px;height:100vh;background:var(--panel);border-left:1px solid var(--border);box-shadow:-8px 0 30px rgba(0,0,0,.5);z-index:100;transition:right .28s;display:flex;flex-direction:column}
+#detailPanel.open{right:0}
+#detailPanel .dp-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+#detailPanel .dp-hd h4{font-size:14px;color:#fff;display:flex;align-items:center;gap:9px}
+#detailPanel .dp-hd .x{cursor:pointer;color:var(--text3);font-size:20px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+#detailPanel .dp-hd .x:hover{background:var(--panel3);color:#fff}
+#detailPanel .dp-bd{flex:1;overflow-y:auto;padding:16px 18px}
+.dp-sec{margin-bottom:18px}
+.dp-sec h5{font-size:10.5px;text-transform:uppercase;color:var(--text3);letter-spacing:.7px;margin-bottom:9px;font-weight:600}
+.dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dp-item{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:9px 11px}
+.dp-item .k{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.dp-item .v{font-size:14px;color:#fff;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+.dp-item .v .u{font-size:11px;color:var(--text2);font-weight:400}
+.endpoint-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:9px}
+.endpoint-card .ep-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.endpoint-card .ep-h b{font-size:12px;color:#fff}
+.mini-chart{width:100%;height:90px;background:var(--bg);border-radius:6px;border:1px solid var(--border)}
+
+/* ===== Charts ===== */
+.chart-box{position:relative}
+.chart-tip{position:absolute;background:var(--panel3);border:1px solid var(--border2);border-radius:6px;padding:6px 9px;font-size:11px;color:var(--text);pointer-events:none;opacity:0;transition:.1s;z-index:10;white-space:nowrap;box-shadow:var(--shadow)}
+
+/* ===== Misc ===== */
+.muted{color:var(--text3)}
+.flex{display:flex} .aic{align-items:center} .gap{gap:10px} .jcb{justify-content:space-between}
+.mt0{margin-top:0}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}
+.mb0{margin-bottom:0}.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}
+.tag{display:inline-block;background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:1px 7px;border-radius:4px;font-size:10px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--panel3);border:1px solid var(--border2);border-left:3px solid var(--cisco);border-radius:7px;padding:11px 15px;font-size:12px;color:var(--text);box-shadow:var(--shadow);min-width:260px;animation:slideIn .3s}
+.toast.ok{border-left-color:var(--green)} .toast.warn{border-left-color:var(--orange)} .toast.bad{border-left-color:var(--red)}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:none;opacity:1}}
+.progress{height:8px;background:var(--bg2);border-radius:5px;overflow:hidden;border:1px solid var(--border)}
+.progress .bar{height:100%;background:linear-gradient(90deg,var(--cisco),var(--accent));transition:width .3s;border-radius:5px}
+.bar-seg{display:flex;height:9px;border-radius:5px;overflow:hidden;border:1px solid var(--border)}
+.bar-seg .s{height:100%}
+
+/* Gauge */
+.gauge{position:relative;width:100%;display:flex;justify-content:center}
+
+/* discovery result rows */
+.disc-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.disc-row:hover{background:rgba(74,158,255,.05)}
+.disc-row .ip{font-family:monospace;color:var(--cisco);font-size:12px;width:120px}
+.disc-row .name{font-weight:600;color:#fff;font-size:12px;flex:1}
+.disc-row .name .mdl{color:var(--text3);font-weight:400;font-size:11px}
+
+.settings-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.settings-tabs a{padding:9px 16px;font-size:12px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent}
+.settings-tabs a.active{color:var(--cisco);border-color:var(--cisco)}
+.set-pane{display:none}.set-pane.active{display:block}
+.list-item{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;margin-bottom:8px}
+.list-item .li-h b{font-size:12.5px;color:#fff}.list-item .li-h .sub{font-size:11px;color:var(--text3)}
+.toggle{width:38px;height:21px;background:var(--border2);border-radius:11px;position:relative;cursor:pointer;transition:.2s;flex-shrink:0}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:17px;height:17px;background:#fff;border-radius:50%;transition:.2s}
+.toggle.on::after{left:19px}
+
+.empty{text-align:center;padding:40px;color:var(--text3);font-size:12px}
+.scroll-y{overflow-y:auto}
+.overflow-visible{overflow:visible}
+.flowpath{stroke:var(--cisco);stroke-width:5;fill:none;stroke-dasharray:8 5;animation:dash 1s linear infinite;filter:drop-shadow(0 0 4px var(--cisco))}
+@keyframes dash{to{stroke-dashoffset:-13}}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="logo">
+        <div class="mark">C</div>
+        <div class="txt"><b>Fiber Ring Monitor</b><span>CISCO · NMS</span></div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="nav-section">Monitoring</div>
+      <a data-page="overview" class="active"><span class="ico">▤</span>Overview</a>
+      <a data-page="topology"><span class="ico">◎</span>Interactive Topology</a>
+      <a data-page="fiber"><span class="ico">≡</span>Fiber Monitoring<span class="badge warn" id="navFiberBad">0</span></a>
+      <a data-page="traffic"><span class="ico">↗</span>Traffic Analytics</a>
+      <a data-page="sfp"><span class="ico">☼</span>SFP DOM / DDM</a>
+      <a data-page="path"><span class="ico">⇄</span>Path Analysis</a>
+      <div class="nav-section">Operations</div>
+      <a data-page="inventory"><span class="ico">▦</span>Switch Inventory</a>
+      <a data-page="discovery"><span class="ico">⊙</span>Auto Discovery</a>
+      <a data-page="alerts"><span class="ico">⚠</span>Alerts &amp; Events<span class="badge" id="navAlerts">0</span></a>
+      <a data-page="reports"><span class="ico">📃</span>Reports</a>
+      <div class="nav-section">System</div>
+      <a data-page="settings"><span class="ico">⚙</span>Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="row"><span><span class="dot"></span>SNMP Poller</span><span id="sfPoll">healthy</span></div>
+      <div class="row"><span><span class="dot"></span>Trap Receiver</span><span id="sfTrap">healthy</span></div>
+      <div class="row"><span><span class="dot warn"></span>Database</span><span id="sfDb">degraded</span></div>
+      <div class="row"><span>Poll success</span><span id="sfSucc">99.2%</span></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div id="main">
+    <header id="topbar">
+      <div class="page-title"><span id="tbTitle">Overview</span><span class="crumb" id="tbCrumb">/ Dashboard</span></div>
+      <div class="spacer"></div>
+      <div class="topbar-stat"><span class="pulse"></span><span>LIVE</span></div>
+      <div class="topbar-stat">Devices <span class="v ok" id="tbDev">0</span></div>
+      <div class="topbar-stat">Links <span class="v" id="tbLink">0</span></div>
+      <div class="topbar-stat">Ring <span class="v warn" id="tbRing">—</span></div>
+      <div class="topbar-stat">Alerts <span class="v bad" id="tbAlert">0</span></div>
+      <div class="topbar-stat" id="liveClock">--:--:--</div>
+    </header>
+    <div id="content">
+
+      <!-- ============ OVERVIEW ============ -->
+      <section class="page active" id="page-overview">
+        <div class="grid kpis" id="ovKpis"></div>
+        <div class="grid mt12" style="grid-template-columns:1.4fr 1fr">
+          <div class="card">
+            <div class="hd"><h3>◎ Ring Topology Health</h3><span class="sub" id="ovRingSub"></span></div>
+            <div class="bd"><div id="ovMiniTopo"></div></div>
+          </div>
+          <div class="card">
+            <div class="hd"><h3>↗ Network Health Trend (24h)</h3></div>
+            <div class="bd"><div id="ovTrend" class="chart-box"></div></div>
+          </div>
+        </div>
+        <div class="grid mt12" style="grid-template-columns:1.3fr 1fr">
+          <div class="card">
+            <div class="hd"><h3>⚠ Recent Incidents</h3><span class="sub">last 24 hours</span></div>
+            <div class="bd tbl-wrap" id="ovIncidents"></div>
+          </div>
+          <div class="card">
+            <div class="hd"><h3>≡ Link Status Breakdown</h3></div>
+            <div class="bd" id="ovLinkMix"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ TOPOLOGY ============ -->
+      <section class="page" id="page-topology">
+        <div class="card">
+          <div class="hd">
+            <h3>◎ Fiber Ring Topology</h3>
+            <div class="actions">
+              <button class="btn sm" id="btnTopoRefresh">⟳ Refresh</button>
+              <button class="btn sm" id="btnTopoSimCut">⌧ Simulate Fiber Cut</button>
+              <button class="btn sm" id="btnTopoSimFix">✓ Restore All</button>
+            </div>
+          </div>
+          <div class="bd">
+            <div class="topo-controls">
+              <div class="legend" id="topoLegend"></div>
+            </div>
+            <svg id="topoSvg" viewBox="0 0 980 560" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="muted mt8" style="font-size:11px">Click a link to open the detail panel · click a node to focus its interfaces. SNMP counters, optical DOM and protocol state are polled every few seconds (simulated).</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ FIBER MONITORING ============ -->
+      <section class="page" id="page-fiber">
+        <div class="card">
+          <div class="hd"><h3>≡ Fiber Link Monitoring</h3><span class="sub" id="fiberSub"></span></div>
+          <div class="bd tbl-wrap" id="fiberTable"></div>
+        </div>
+      </section>
+
+      <!-- ============ TRAFFIC ============ -->
+      <section class="page" id="page-traffic">
+        <div class="card mb12">
+          <div class="hd"><h3>↗ Traffic Analytics</h3><span class="sub">IF-MIB high-capacity counters · 64-bit</span></div>
+          <div class="bd">
+            <div class="form-row">
+              <div><label class="fl">Link</label><select id="trLink"></select></div>
+              <div><label class="fl">Direction</label><select id="trDir"><option>Both RX &amp; TX</option><option>RX only</option><option>TX only</option></select></div>
+              <div><label class="fl">Time Range</label><select id="trRange"><option value="60">Last 60 min</option><option value="360" selected>Last 6 hours</option><option value="1440">Last 24 hours</option><option value="10080">Last 7 days</option></select></div>
+              <div><button class="btn primary" id="trApply">Apply</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr">
+          <div class="card"><div class="hd"><h3>RX / TX Bandwidth</h3><span class="sub" id="trSub1"></span></div><div class="bd"><div id="trChart1" class="chart-box"></div></div></div>
+          <div class="card"><div class="hd"><h3>Utilization %</h3><span class="sub" id="trSub2"></span></div><div class="bd"><div id="trChart2" class="chart-box"></div></div></div>
+        </div>
+        <div class="card mt12">
+          <div class="hd"><h3>Top Links by Traffic</h3></div>
+          <div class="bd tbl-wrap" id="trTop"></div>
+        </div>
+      </section>
+
+      <!-- ============ SFP DOM ============ -->
+      <section class="page" id="page-sfp">
+        <div class="grid" style="grid-template-columns:1fr 1fr 1fr" id="sfpGauges"></div>
+        <div class="card mt12">
+          <div class="hd"><h3>☼ SFP DOM / DDM Inventory</h3><span class="sub">Cisco optical MIB · thresholds from SFP EEPROM</span></div>
+          <div class="bd tbl-wrap" id="sfpTable"></div>
+        </div>
+      </section>
+
+      <!-- ============ PATH ANALYSIS ============ -->
+      <section class="page" id="page-path">
+        <div class="card mb12">
+          <div class="hd"><h3>⇄ Network Path Analysis</h3><span class="sub">VLAN-aware · inferred from CDP/LLDP + STP + forwarding tables</span></div>
+          <div class="bd">
+            <div class="form-row">
+              <div><label class="fl">Source Switch</label><select id="paSrc"></select></div>
+              <div><label class="fl">Destination Switch</label><select id="paDst"></select></div>
+              <div><label class="fl">VLAN</label><select id="paVlan"><option>10 — Data</option><option>20 — Voice</option><option>30 — Management</option><option>99 — Native</option></select></div>
+              <div><button class="btn primary" id="paCalc">Trace Path</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="grid" style="grid-template-columns:1.4fr 1fr">
+          <div class="card"><div class="hd"><h3>Path on Topology</h3></div><div class="bd"><svg id="paSvg" viewBox="0 0 980 560" preserveAspectRatio="xMidYMid meet" style="width:100%;height:480px;background:radial-gradient(ellipse at center,#0d1426,#080b14);border-radius:8px"></svg></div></div>
+          <div class="card"><div class="hd"><h3>Hop-by-Hop Evidence</h3></div><div class="bd" id="paHops"></div></div>
+        </div>
+      </section>
+
+      <!-- ============ INVENTORY ============ -->
+      <section class="page" id="page-inventory">
+        <div class="card">
+          <div class="hd"><h3>▦ Switch Inventory</h3>
+            <div class="actions">
+              <input class="input" id="invSearch" placeholder="Filter by name / IP / model…" style="width:220px">
+              <select class="input" id="invModel" style="width:160px"></select>
+            </div>
+          </div>
+          <div class="bd tbl-wrap" id="invTable"></div>
+        </div>
+      </section>
+
+      <!-- ============ DISCOVERY ============ -->
+      <section class="page" id="page-discovery">
+        <div class="card mb12">
+          <div class="hd"><h3>⊙ Automatic IP-Range Discovery</h3><span class="sub">SNMPv3 read-only · authorized scope enforcement</span></div>
+          <div class="bd">
+            <div class="form-row">
+              <div style="flex:2"><label class="fl">CIDR / IP Range</label><input class="input" id="dcCidr" value="10.10.10.0/28"></div>
+              <div><label class="fl">SNMP Profile</label><select id="dcProfile"></select></div>
+              <div><label class="fl">Concurrency</label><input class="input" id="dcConc" value="32" type="number" min="1" max="256"></div>
+              <div><label class="fl">ICMP Pre-check</label><select id="dcIcmp"><option>enabled</option><option>disabled</option></select></div>
+              <div><button class="btn primary" id="dcScan">▶ Start Scan</button></div>
+            </div>
+            <div class="mt8" id="dcScopeWarn"></div>
+            <div id="dcProgressWrap" style="display:none" class="mt12">
+              <div class="flex aic jcb mb8"><span class="muted" id="dcScanLabel">Scanning…</span><span class="muted" id="dcScanStat"></span></div>
+              <div class="progress"><div class="bar" id="dcBar" style="width:0%"></div></div>
+              <div class="flex jcb mt8" style="font-size:11px"><span>Discovered: <b id="dcFound">0</b></span><span>Unreachable: <b id="dcUnreach">0</b></span><span>Errors: <b id="dcErr">0</b></span><button class="btn sm danger" id="dcStop">■ Stop</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="hd"><h3>Discovery Results</h3>
+            <div class="actions"><button class="btn sm primary" id="dcRegAll">Register Eligible</button></div>
+          </div>
+          <div class="bd" id="dcResults"><div class="empty">No scan results yet. Start a scan above.</div></div>
+        </div>
+        <div class="card mt12">
+          <div class="hd"><h3>Scan History</h3></div>
+          <div class="bd tbl-wrap" id="dcHistory"></div>
+        </div>
+      </section>
+
+      <!-- ============ ALERTS ============ -->
+      <section class="page" id="page-alerts">
+        <div class="card">
+          <div class="hd"><h3>⚠ Alerts &amp; Events</h3>
+            <div class="actions">
+              <select class="input" id="alSev" style="width:130px"><option value="">All severities</option><option>critical</option><option>major</option><option>warning</option><option>informational</option></select>
+              <select class="input" id="alStat" style="width:120px"><option value="">All status</option><option>open</option><option>acknowledged</option><option>closed</option></select>
+            </div>
+          </div>
+          <div class="bd tbl-wrap" id="alTable"></div>
+        </div>
+      </section>
+
+      <!-- ============ REPORTS ============ -->
+      <section class="page" id="page-reports">
+        <div class="card mb12">
+          <div class="hd"><h3>📃 Reports</h3>
+            <div class="actions">
+              <select class="input" id="rpType" style="width:200px"><option value="uptime">Uptime &amp; Availability</option><option value="incident">Ring Incidents</option><option value="traffic">Traffic Peaks</option><option value="optical">Optical Warnings</option><option value="discovery">Discovery Changes</option></select>
+              <select class="input" id="rpRange" style="width:140px"><option value="24">24h</option><option value="168" selected>7 days</option><option value="720">30 days</option></select>
+              <button class="btn primary" id="rpGen">Generate</button>
+            </div>
+          </div>
+          <div class="bd" id="rpBody"><div class="empty">Select a report type and generate.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ SETTINGS ============ -->
+      <section class="page" id="page-settings">
+        <div class="card">
+          <div class="hd"><h3>⚙ System Settings</h3></div>
+          <div class="bd">
+            <div class="settings-tabs" id="setTabs">
+              <a class="active" data-tab="snmp">SNMP Profiles</a>
+              <a data-tab="poll">Polling Schedules</a>
+              <a data-tab="thresh">Alert Thresholds</a>
+              <a data-tab="scope">Discovery Scopes</a>
+              <a data-tab="notif">Notifications</a>
+              <a data-tab="rbac">Users / RBAC</a>
+            </div>
+            <div class="set-pane active" id="set-snmp"></div>
+            <div class="set-pane" id="set-poll"></div>
+            <div class="set-pane" id="set-thresh"></div>
+            <div class="set-pane" id="set-scope"></div>
+            <div class="set-pane" id="set-notif"></div>
+            <div class="set-pane" id="set-rbac"></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- Slide detail panel -->
+<div id="detailPanel">
+  <div class="dp-hd"><h4 id="dpTitle">Link Detail</h4><div class="x" id="dpClose">×</div></div>
+  <div class="dp-bd" id="dpBody"></div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ============================================================
+   Cisco Fiber Ring Monitoring Dashboard
+   Self-contained simulation of the platform described in the
+   specification PDF. All telemetry is generated/simulated
+   client-side; no real SNMP polling is performed.
+   ============================================================ */
+"use strict";
+const APP = {};
+
+/* ============================================================
+   1. DATA MODEL — simulated Cisco fiber ring
+   ============================================================ */
+APP.SWITCHES = [
+  {id:'sw1', name:'SW-CORE-01', ip:'10.10.10.1',  model:'Catalyst 9300', ios:'17.06.03', serial:'FOC2308X11A', loc:'DC-A / Rack 1', role:'core'},
+  {id:'sw2', name:'SW-CORE-02', ip:'10.10.10.2',  model:'Catalyst 9300', ios:'17.06.03', serial:'FOC2308X12B', loc:'DC-B / Rack 1', role:'core'},
+  {id:'sw3', name:'SW-DIST-01', ip:'10.10.10.3',  model:'Catalyst 9200', ios:'17.04.01', serial:'FOC2211Y33C', loc:'DC-A / Rack 2', role:'distribution'},
+  {id:'sw4', name:'SW-DIST-02', ip:'10.10.10.4',  model:'Catalyst 9200', ios:'17.04.01', serial:'FOC2211Y34D', loc:'DC-B / Rack 2', role:'distribution'},
+  {id:'sw5', name:'SW-ACC-01',  ip:'10.10.10.11', model:'Catalyst 2960X',ios:'15.2(7)E5',serial:'FOC2105X51E', loc:'Floor 1 / IDF-1', role:'access'},
+  {id:'sw6', name:'SW-ACC-02',  ip:'10.10.10.12', model:'Catalyst 2960X',ios:'15.2(7)E5',serial:'FOC2105X52F', loc:'Floor 2 / IDF-2', role:'access'},
+  {id:'sw7', name:'SW-ACC-03',  ip:'10.10.10.13', model:'Catalyst 3650', ios:'16.12.05',serial:'FOC2202X73G', loc:'Floor 3 / IDF-3', role:'access'},
+  {id:'sw8', name:'SW-ACC-04',  ip:'10.10.10.14', model:'Catalyst 3650', ios:'16.12.05',serial:'FOC2202X74H', loc:'Floor 4 / IDF-4', role:'access'},
+  {id:'sw9', name:'SW-ACC-05',  ip:'10.10.10.15', model:'Catalyst 9200', ios:'17.04.01',serial:'FOC2211Y95I', loc:'Floor 5 / IDF-5', role:'access'},
+  {id:'sw10',name:'SW-ACC-06',  ip:'10.10.10.16', model:'Catalyst 9200', ios:'17.04.01',serial:'FOC2211Y96J', loc:'Floor 6 / IDF-6', role:'access'},
+  {id:'sw11',name:'SW-ACC-07',  ip:'10.10.10.17', model:'Catalyst 9300', ios:'17.06.03',serial:'FOC2308X17K', loc:'Floor 7 / IDF-7', role:'access'},
+  {id:'sw12',name:'SW-ACC-08',  ip:'10.10.10.18', model:'Catalyst 9300', ios:'17.06.03',serial:'FOC2308X18L', loc:'Floor 8 / IDF-8', role:'access'},
+];
+
+// Ring order: 1-3-5-7-9-11-12-10-8-6-4-2-1  (closed ring, dual-core)
+APP.RING_ORDER = ['sw1','sw3','sw5','sw7','sw9','sw11','sw12','sw10','sw8','sw6','sw4','sw2'];
+
+// Build fiber links from ring order + two core cross-links
+APP.LINKS = [];
+(function buildLinks(){
+  const ring = APP.RING_ORDER;
+  let idx=1;
+  for(let i=0;i<ring.length;i++){
+    const a=ring[i], b=ring[(i+1)%ring.length];
+    APP.LINKS.push(makeLink(idx++, a,b, 'TenGig1/1/1','TenGig1/1/2', true));
+  }
+  // core inter-chassis trunk (not part of ring)
+  APP.LINKS.push(makeLink(idx++, 'sw1','sw2','TenGig1/1/4','TenGig1/1/4', false));
+  // distribution cross-link
+  APP.LINKS.push(makeLink(idx++, 'sw3','sw4','TenGig1/1/3','TenGig1/1/3', false));
+})();
+
+function makeLink(id, aSw, bSw, aIf, bIf, ring){
+  const cap = 10000; // 10Gbps
+  return {
+    id:'L'+id, name: ring ? ('Ring-'+id) : ('Trunk-'+id),
+    a:{sw:aSw, if:aIf}, b:{sw:bSw, if:bIf},
+    ring: ring, capacity_mbps: cap,
+    status: 'up', verification:'verified',
+    a_metrics:null, b_metrics:null,
+    history: genHistory(60), // 60 points
+    incident:null,
+  };
+}
+
+function rand(a,b){return a+Math.random()*(b-a)}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function fmt(n,d){d=d==null?1:d; if(n==null||isNaN(n))return '—'; return Number(n).toFixed(d)}
+function fmtBytes(n){
+  if(n==null||isNaN(n))return '—';
+  const u=['bps','Kbps','Mbps','Gbps']; let v=n,i=0;
+  while(v>=1000&&i<u.length-1){v/=1000;i++}
+  return v.toFixed(i<2?0:1)+' '+u[i];
+}
+function swName(id){const s=APP.SWITCHES.find(x=>x.id===id);return s?s.name:id}
+function swObj(id){return APP.SWITCHES.find(x=>x.id===id)}
+function linkById(id){return APP.LINKS.find(l=>l.id===id)}
+function nowSec(){return Math.floor(Date.now()/1000)}
+
+// Generate a noisy baseline time series ending near `val`
+function genHistory(points, base){
+  const out=[]; let v = base!=null?base: rand(600,2200);
+  for(let i=points-1;i>=0;i--){
+    v += rand(-120,140); v=Math.max(40,Math.min(9800,v));
+    out.push({t:nowSec()-i*60, v:Math.round(v)});
+  }
+  return out;
+}
+
+// Per-endpoint live metric generator
+function freshMetrics(link, side){
+  const cap = link.capacity_mbps;
+  const rx = rand(120, 4800);
+  const tx = rand(120, 4800);
+  return {
+    rx_mbps: rx, tx_mbps: tx,
+    rx_octets: Math.floor(rand(1e9,9e9)),
+    tx_octets: Math.floor(rand(1e9,9e9)),
+    utilization: (Math.max(rx,tx)/cap)*100,
+    rx_util: (rx/cap)*100, tx_util:(tx/cap)*100,
+    tx_dbm: rand(-7,-3), rx_dbm: rand(-9,-4),
+    temp_c: rand(34,46), bias_ma: rand(6.2,9.4), voltage_v: rand(3.26,3.34),
+    tx_thresh:{warn:-3,crit:-1}, rx_thresh:{warn:-14,crit:-19},
+    temp_thresh:{warn:70,crit:80},
+    errors: Math.random()<0.12?Math.floor(rand(1,40)):0,
+    crc: Math.random()<0.06?Math.floor(rand(1,8)):0,
+    discards:0,
+    dom_supported: !(swObj(link[side].sw).model.indexOf('2960X')>-1 && Math.random()<0.25),
+    admin_status:'up', oper_status:'up',
+    last_poll: nowSec(), stale:false,
+  };
+}
+
+// Initialize metrics for all links
+APP.LINKS.forEach(l=>{
+  l.a_metrics = freshMetrics(l,'a');
+  l.b_metrics = freshMetrics(l,'b');
+});
+
+// Switch status derived from links
+function switchStatus(id){
+  const links = APP.LINKS.filter(l=>l.a.sw===id||l.b.sw===id);
+  if(links.some(l=>l.status==='down')) return links.every(l=>l.status==='down')?'down':'degraded';
+  if(links.some(l=>l.status==='degraded')) return 'degraded';
+  if(links.some(l=>l.status==='failover')) return 'failover';
+  return 'up';
+}
+
+// ===================== Alerts =====================
+APP.ALERTS = [
+  {id:'A1',sev:'major',title:'High RX utilization on Ring-3',target:'L3 (SW-DIST-01 ↔ SW-ACC-01)',status:'open',opened:nowSec()-3600*2,ack:null,closed:null,cause:'probable: micro-burst / oversubscription',dedup:'L3-util'},
+  {id:'A2',sev:'warning',title:'SFP temperature warning — SW-ACC-03',target:'SW-ACC-03 TenGig1/1/1',status:'acknowledged',opened:nowSec()-3600*5,ack:nowSec()-3600*4,closed:null,cause:'probable: ambient / airflow',dedup:'sw7-temp'},
+  {id:'A3',sev:'informational',title:'New device discovered — 10.10.10.21',target:'Discovery scan #1042',status:'closed',opened:nowSec()-3600*9,ack:nowSec()-3600*8,closed:nowSec()-3600*7,cause:'discovery',dedup:'disc-21'},
+  {id:'A4',sev:'critical',title:'Link DOWN — Ring-7',target:'L7 (SW-ACC-05 ↔ SW-ACC-07)',status:'open',opened:nowSec()-60*8,ack:null,closed:null,cause:'probable: fiber physical loss',dedup:'L7-down'},
+];
+
+// Pre-seed one incident: Ring-7 down (the simulated fiber cut)
+(function seedIncident(){
+  const l = linkById('L7');
+  l.status='down';
+  l.a_metrics.oper_status='down'; l.b_metrics.oper_status='down';
+  l.a_metrics.stale=false; l.b_metrics.stale=false;
+  l.a_metrics.rx_mbps=0; l.a_metrics.tx_mbps=0; l.b_metrics.rx_mbps=0; l.b_metrics.tx_mbps=0;
+  l.incident = {id:'INC-1001', opened:nowSec()-60*8, cause:'probable: fiber physical loss', type:'linkDown'};
+})();
+
+// ===================== Discovery history & results =====================
+APP.SCAN_HISTORY = [
+  {id:'1042',range:'10.10.10.0/28',scope:'10.10.10.0/24',profile:'snmpv3-ro-priv',status:'completed',progress:100,started:nowSec()-3600*9,finished:nowSec()-3600*9+42,found:6,by:'admin'},
+  {id:'1041',range:'10.10.10.16/28',scope:'10.10.10.0/24',profile:'snmpv3-ro-priv',status:'completed',progress:100,started:nowSec()-3600*20,finished:nowSec()-3600*20+38,found:4,by:'admin'},
+  {id:'1040',range:'10.10.11.0/28',scope:'10.10.11.0/24',profile:'snmpv3-ro-auth',status:'completed',progress:100,started:nowSec()-3600*30,finished:nowSec()-3600*30+51,found:2,by:'netops'},
+];
+APP.DISC_RESULTS = [];
+
+// ===================== Settings data =====================
+APP.SNMP_PROFILES = [
+  {id:'snmpv3-ro-priv',name:'SNMPv3 RO (authPriv)',user:'mon-ro',auth:'SHA',priv:'AES-128',level:'authPriv',targets:'all'},
+  {id:'snmpv3-ro-auth',name:'SNMPv3 RO (authNoPriv)',user:'mon-ro-legacy',auth:'SHA',priv:'none',level:'authNoPriv',targets:'legacy-floor'},
+];
+APP.POLL_SCHEDULES = [
+  {metric:'Interface status',interval:'5s',method:'SNMP poll + traps'},
+  {metric:'Traffic counters',interval:'10s',method:'IF-MIB 64-bit'},
+  {metric:'SFP DOM/DDM',interval:'30s',method:'Cisco optical MIB'},
+  {metric:'CDP/LLDP neighbors',interval:'60s',method:'CDP-MIB / LLDP-MIB'},
+  {metric:'STP / ring protocol',interval:'30s',method:'Platform MIBs'},
+  {metric:'Frontend refresh',interval:'2s',method:'WebSocket push'},
+];
+APP.THRESHOLDS = [
+  {name:'Utilization warning',value:70,unit:'%'},
+  {name:'Utilization critical',value:88,unit:'%'},
+  {name:'RX optical low warning',value:-14,unit:'dBm'},
+  {name:'RX optical low critical',value:-19,unit:'dBm'},
+  {name:'SFP temp warning',value:70,unit:'°C'},
+  {name:'SFP temp critical',value:80,unit:'°C'},
+  {name:'Error-rate threshold',value:10,unit:'errs/min'},
+  {name:'Polling stale',value:45,unit:'s'},
+  {name:'Flap suppression',value:3,unit:'flaps/60s'},
+];
+APP.SCOPES = [
+  {cidr:'10.10.10.0/24',desc:'Management VLAN — DC + floors',enabled:true},
+  {cidr:'10.10.11.0/24',desc:'OOB management legacy',enabled:true},
+  {cidr:'10.10.20.0/24',desc:'Lab / staging (read-only)',enabled:false},
+];
+APP.NOTIF = [
+  {channel:'Email',dest:'noc@example.com',sev:'major+',enabled:true},
+  {channel:'Telegram',dest:'@fiber-ring-noc',sev:'critical',enabled:true},
+  {channel:'Email',dest:'netops@example.com',sev:'informational+',enabled:false},
+];
+APP.USERS = [
+  {user:'admin',role:'Administrator',enabled:true,last:'2026-11-03 04:21'},
+  {user:'netops',role:'Operator',enabled:true,last:'2026-11-02 22:10'},
+  {user:'viewer',role:'Read-only',enabled:true,last:'2026-11-01 09:55'},
+];
+
+// ===================== Helpers =====================
+function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstChild}
+function $(s,root){return (root||document).querySelector(s)}
+function $$(s,root){return [...(root||document).querySelectorAll(s)]}
+function pad(n){return n<10?'0'+n:''+n}
+function timeAgo(ts){const s=nowSec()-ts;if(s<60)return s+'s ago';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+function fmtTime(ts){const d=new Date(ts*1000);return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())}
+function fmtDate(ts){const d=new Date(ts*1000);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+fmtTime(ts)}
+function dur(sec){if(sec<60)return sec+'s';const m=Math.floor(sec/60),s=sec%60;if(m<60)return m+'m '+s+'s';const h=Math.floor(m/60);return h+'h '+(m%60)+'m'}
+function toast(msg,type){const w=$('#toastWrap');const d=el(`<div class="toast ${type||''}">${msg}</div>`);w.appendChild(d);setTimeout(()=>{d.style.opacity=0;d.style.transition='.3s';setTimeout(()=>d.remove(),300)},3400)}
+
+function statusPill(s){
+  const map={up:['up','UP'],down:['down','DOWN'],degraded:['degraded','DEGRADED'],unknown:['unknown','UNKNOWN'],failover:['failover','FAILOVER'],moderate:['moderate','MODERATE']};
+  const m=map[s]||['unknown',s.toUpperCase()];
+  return `<span class="pill ${m[0]}"><span class="d"></span>${m[1]}</span>`;
+}
+function sevPill(s){return `<span class="pill ${s==='critical'?'crit':s}">${s}</span>`}
+
+// health color for a link per spec section 9 (hex — SVG presentation attrs can't resolve CSS vars)
+const HEX={green:'#2ecc71',blue:'#3b82f6',orange:'#f39c12',red:'#e74c3c',grey:'#6b7a96',purple:'#9b59b6'};
+function linkColor(l){ return HEX[linkColorName(l)]; }
+function linkColorName(l){
+  if(l.status==='down')return 'red';
+  if(l.status==='failover')return 'purple';
+  if(l.status==='degraded')return 'orange';
+  if(l.status==='unknown')return 'grey';
+  const u=Math.max(l.a_metrics.utilization,l.b_metrics.utilization);
+  if(u>=70)return 'orange';
+  if(u>=40)return 'blue';
+  return 'green';
+}
+
+/* ============================================================
+   2. REAL-TIME SIMULATION ENGINE
+   Drives counter deltas, optical drift, occasional state changes.
+   ============================================================ */
+APP.SIM = {
+  tick:0,
+  flapping:null,
+  start(){
+    setInterval(()=>this.poll(), 2000);
+  },
+  poll(){
+    this.tick++;
+    const t = nowSec();
+    APP.LINKS.forEach(l=>{
+      if(l.status==='down') {
+        // keep zeroed but refresh last_poll
+        l.a_metrics.last_poll=t; l.b_metrics.last_poll=t;
+        return;
+      }
+      ['a_metrics','b_metrics'].forEach(side=>{
+        const m=l[side];
+        if(!m)return;
+        // simulate counter delta -> new mbps (random walk)
+        const dRx = rand(-180,200), dTx=rand(-180,200);
+        m.rx_mbps = Math.max(20, Math.min(l.capacity_mbps-50, m.rx_mbps+dRx));
+        m.tx_mbps = Math.max(20, Math.min(l.capacity_mbps-50, m.tx_mbps+dTx));
+        m.rx_octets += Math.floor(m.rx_mbps*1e6/8*2);
+        m.tx_octets += Math.floor(m.tx_mbps*1e6/8*2);
+        m.utilization = Math.max(m.rx_mbps,m.tx_mbps)/l.capacity_mbps*100;
+        m.rx_util = m.rx_mbps/l.capacity_mbps*100;
+        m.tx_util = m.tx_mbps/l.capacity_mbps*100;
+        // optical drift
+        m.tx_dbm += rand(-0.2,0.2); m.rx_dbm += rand(-0.25,0.25);
+        m.temp_c += rand(-0.3,0.3); m.temp_c=Math.max(30,Math.min(62,m.temp_c));
+        m.bias_ma += rand(-0.1,0.1);
+        m.voltage_v = 3.3 + rand(-0.02,0.02);
+        // occasional errors
+        if(Math.random()<0.05) m.errors += Math.floor(rand(1,12));
+        m.last_poll = t;
+        // degrade if util high or temp high
+        if(m.utilization>88 || m.temp_c>55) {
+          if(l.status==='up') l.status='degraded';
+        }
+      });
+      // push history point every ~5s
+      if(this.tick%2===0){
+        const v=Math.round(Math.max(l.a_metrics.rx_mbps,l.b_metrics.rx_mbps));
+        l.history.push({t,v});
+        if(l.history.length>120) l.history.shift();
+      }
+    });
+    // recompute derived alerts occasionally
+    if(this.tick%5===0) this.evaluateAlerts();
+    // refresh whatever page is active
+    APP.refreshActive();
+  },
+  evaluateAlerts(){
+    APP.LINKS.forEach(l=>{
+      const u=Math.max(l.a_metrics.utilization,l.b_metrics.utilization);
+      const dedup='L'+l.id.replace('L','')+'-util';
+      const existing=APP.ALERTS.find(a=>a.dedup===dedup && a.status!=='closed');
+      if(u>=88 && l.status!=='down' && !existing){
+        APP.ALERTS.unshift({id:'A'+(APP.ALERTS.length+1),sev:'major',title:'High utilization on '+l.name,target:l.name+' ('+swName(l.a.sw)+' ↔ '+swName(l.b.sw)+')',status:'open',opened:nowSec(),ack:null,closed:null,cause:'probable: micro-burst / oversubscription',dedup});
+        toast('New alert: High utilization on '+l.name,'warn');
+      }
+    });
+  },
+  simulateCut(linkId){
+    const l=linkById(linkId); if(!l)return;
+    l.status='down';
+    l.a_metrics.oper_status='down'; l.b_metrics.oper_status='down';
+    l.a_metrics.rx_mbps=0;l.a_metrics.tx_mbps=0;l.b_metrics.rx_mbps=0;l.b_metrics.tx_mbps=0;
+    l.a_metrics.utilization=0;l.b_metrics.utilization=0;
+    l.incident={id:'INC-'+(1000+Math.floor(Math.random()*900)),opened:nowSec(),cause:'probable: fiber physical loss',type:'linkDown'};
+    const dedup=l.id+'-down';
+    if(!APP.ALERTS.find(a=>a.dedup===dedup)){
+      APP.ALERTS.unshift({id:'A'+(APP.ALERTS.length+1),sev:'critical',title:'Link DOWN — '+l.name,target:l.name+' ('+swName(l.a.sw)+' ↔ '+swName(l.b.sw)+')',status:'open',opened:nowSec(),ack:null,closed:null,cause:'probable: fiber physical loss',dedup});
+    }
+    toast('Simulated fiber cut on '+l.name+' — incident opened','bad');
+  },
+  restoreAll(){
+    APP.LINKS.forEach(l=>{
+      if(l.status==='down'){
+        l.status='up';
+        l.a_metrics.oper_status='up'; l.b_metrics.oper_status='up';
+        l.a_metrics=freshMetrics(l,'a'); l.b_metrics=freshMetrics(l,'b');
+        if(l.incident){ l.incident.closed=nowSec(); }
+        // close the down alert
+        const dedup=l.id+'-down';
+        APP.ALERTS.forEach(a=>{if(a.dedup===dedup && a.status!=='closed'){a.status='closed';a.closed=nowSec();}});
+        toast(l.name+' restored — incident closed','ok');
+      }
+      if(l.status==='degraded') l.status='up';
+    });
+  }
+};
+
+/* ============================================================
+   3. ROUTER + TOPBAR
+   ============================================================ */
+APP.CUR='overview';
+APP.PAGE_TITLES={
+  overview:['Overview','/ Dashboard'],topology:['Interactive Topology','/ Topology'],
+  fiber:['Fiber Monitoring','/ Links'],traffic:['Traffic Analytics','/ IF-MIB counters'],
+  sfp:['SFP DOM / DDM','/ Optical diagnostics'],path:['Path Analysis','/ VLAN-aware'],
+  inventory:['Switch Inventory','/ Devices'],discovery:['Auto Discovery','/ IP-range scan'],
+  alerts:['Alerts & Events','/ Incidents'],reports:['Reports','/ Reporting'],
+  settings:['Settings','/ Configuration']
+};
+APP.PAGE_RENDER={};
+
+function navigate(page){
+  APP.CUR=page;
+  closeDetail();
+  $$('.nav a').forEach(a=>a.classList.toggle('active', a.dataset.page===page));
+  $$('.page').forEach(p=>p.classList.remove('active'));
+  const tgt=$('#page-'+page); if(tgt)tgt.classList.add('active');
+  const t=APP.PAGE_TITLES[page]||[page,''];
+  $('#tbTitle').textContent=t[0]; $('#tbCrumb').textContent=t[1];
+  if(APP.PAGE_RENDER[page]) APP.PAGE_RENDER[page]();
+  $('#content').scrollTop=0;
+}
+APP.refreshActive=function(){
+  if(APP.PAGE_RENDER[APP.CUR]) APP.PAGE_RENDER[APP.CUR]();
+  updateTopbar();
+};
+function updateTopbar(){
+  const online=APP.SWITCHES.filter(s=>switchStatus(s.id)!=='down').length;
+  $('#tbDev').textContent=online+'/'+APP.SWITCHES.length;
+  const linksUp=APP.LINKS.filter(l=>l.status==='up').length;
+  $('#tbLink').textContent=linksUp+'/'+APP.LINKS.length;
+  const rh=ringHealth();
+  const e=$('#tbRing'); e.textContent=rh.label.toUpperCase(); e.className='v '+(rh.cls==='healthy'?'ok':rh.cls==='partitioned'?'bad':'warn');
+  const openA=APP.ALERTS.filter(a=>a.status==='open').length;
+  const ae=$('#tbAlert'); ae.textContent=openA; ae.className='v '+(openA>0?'bad':'ok');
+  // sidebar badges
+  const fiberBad=APP.LINKS.filter(l=>l.status==='down'||l.status==='degraded').length;
+  const fb=$('#navFiberBad'); fb.textContent=fiberBad; fb.style.display=fiberBad?'':'none';
+  const na=$('#navAlerts'); na.textContent=openA; na.style.display=openA?'':'none';
+}
+function ringHealth(){
+  const ringLinks=APP.LINKS.filter(l=>l.ring);
+  const down=ringLinks.filter(l=>l.status==='down').length;
+  const degraded=ringLinks.filter(l=>l.status==='degraded').length;
+  // graph connectivity: ring with one down edge still connected (path exists)
+  const disconnected = isRingPartitioned();
+  if(down===0 && degraded===0) return {label:'healthy',cls:'healthy',reason:'All ring edges operational'};
+  if(disconnected) return {label:'partitioned',cls:'partitioned',reason:down+' down edge(s) — ring split into 2 partitions'};
+  if(down>=1) return {label:'degraded',cls:'degraded',reason:down+' edge(s) down — failover path active, ring intact'};
+  return {label:'degraded',cls:'degraded',reason:degraded+' edge(s) degraded'};
+}
+function isRingPartitioned(){
+  // Build adjacency from ring links that are not down
+  const adj={}; APP.RING_ORDER.forEach(id=>adj[id]=[]);
+  APP.LINKS.filter(l=>l.ring && l.status!=='down').forEach(l=>{
+    adj[l.a.sw].push(l.b.sw); adj[l.b.sw].push(l.a.sw);
+  });
+  // BFS from first ring node; if not all reachable -> partitioned
+  const start=APP.RING_ORDER[0]; const seen=new Set([start]); const q=[start];
+  while(q.length){const n=q.shift();(adj[n]||[]).forEach(x=>{if(!seen.has(x)){seen.add(x);q.push(x)}});}
+  return seen.size < APP.RING_ORDER.length;
+}
+function clockTick(){
+  const d=new Date(); $('#liveClock').textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+}
+
+/* ============================================================
+   4. TOPOLOGY — SVG ring graph + node positions
+   ============================================================ */
+APP.NODE_POS = {};
+(function layoutNodes(){
+  const cx=490, cy=280, R=210;
+  const ring=APP.RING_ORDER, n=ring.length;
+  ring.forEach((id,i)=>{
+    const ang=-Math.PI/2 + i*2*Math.PI/n;
+    APP.NODE_POS[id]={x:cx+R*Math.cos(ang), y:cy+R*Math.sin(ang), ring:true};
+  });
+  // Core inter-chassis link sw1<->sw2 : place a second offset near their ring pos
+  // Already on ring; trunk drawn as arc. distribution cross-link sw3<->sw4 similar.
+})();
+
+function topoSVG(linksFilter, highlightPath, container, opts){
+  opts=opts||{};
+  const pathSet = highlightPath? new Set(highlightPath.edges.map(e=>e.linkId)) : new Set();
+  // Build SVG markup as a string (parsed in SVG namespace when set on an <svg>)
+  let s = `<defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="nodeUp"><stop offset="0%" stop-color="#3eff95"/><stop offset="100%" stop-color="#1aa855"/></radialGradient>
+    <radialGradient id="nodeDown"><stop offset="0%" stop-color="#ff6b5e"/><stop offset="100%" stop-color="#a82b22"/></radialGradient>
+    <radialGradient id="nodeDeg"><stop offset="0%" stop-color="#ffcf5e"/><stop offset="100%" stop-color="#b87a12"/></radialGradient>
+    <radialGradient id="nodeFail"><stop offset="0%" stop-color="#c98bff"/><stop offset="100%" stop-color="#6c3c8a"/></radialGradient>
+  </defs><g>`;
+  // links
+  APP.LINKS.forEach(l=>{
+    if(linksFilter && !linksFilter(l)) return;
+    const a=APP.NODE_POS[l.a.sw], b=APP.NODE_POS[l.b.sw];
+    if(!a||!b)return;
+    const color=linkColor(l);
+    const inPath = pathSet.has(l.id);
+    const isTrunk = !l.ring;
+    let d;
+    if(isTrunk){
+      const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+      const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
+      const ox=-dy/len*40, oy=dx/len*40;
+      d=`M ${a.x} ${a.y} Q ${(mx+ox).toFixed(1)} ${(my+oy).toFixed(1)} ${b.x} ${b.y}`;
+    } else {
+      d=`M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+    }
+    const dash = l.status==='down'?' stroke-dasharray="7 6"':'';
+    const pathClass = inPath?'link-line flowpath':'link-line';
+    const stroke = inPath?'#00bceb':color;
+    const sw = inPath?5:4;
+    s += `<path class="link-hit" d="${d}" data-link="${l.id}"></path>`;
+    s += `<path class="${pathClass}" d="${d}" stroke="${stroke}" stroke-width="${sw}" fill="none" stroke-linecap="round"${dash} data-link="${l.id}"></path>`;
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    s += `<text x="${mx.toFixed(1)}" y="${(my-6).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#7e8db0" pointer-events="none">${l.name}</text>`;
+  });
+  // nodes
+  APP.SWITCHES.forEach(dev=>{
+    const p=APP.NODE_POS[dev.id]; if(!p)return;
+    const st=switchStatus(dev.id);
+    const fill = st==='down'?'url(#nodeDown)':st==='degraded'?'url(#nodeDeg)':st==='failover'?'url(#nodeFail)':'url(#nodeUp)';
+    const filt = st!=='up'?' filter="url(#glow)"':'';
+    const roleDot = dev.role==='core'?'#00bceb':dev.role==='distribution'?'#f39c12':'#6b7a96';
+    s += `<circle cx="${p.x}" cy="${p.y}" r="15" fill="none" stroke="#2a3a5c" stroke-width="1"/>`;
+    s += `<circle class="node-circle" cx="${p.x}" cy="${p.y}" r="12" fill="${fill}" stroke="#0a0e1a" stroke-width="2"${filt} data-sw="${dev.id}"></circle>`;
+    s += `<circle cx="${p.x+9}" cy="${p.y-9}" r="3" fill="${roleDot}"/>`;
+    s += `<text class="node-label" x="${p.x}" y="${p.y+28}">${dev.name.replace('SW-','')}</text>`;
+    s += `<text class="node-sub" x="${p.x}" y="${p.y+40}">${dev.ip}</text>`;
+  });
+  s += `</g>`;
+  // target svg element: use container if it's already an <svg>, else build one inside it
+  let svg;
+  if(container.tagName && container.tagName.toLowerCase()==='svg'){ svg=container; }
+  else {
+    container.innerHTML='';
+    svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 980 560');
+    svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+    svg.style.width='100%';
+    svg.style.height=(opts.h||240)+'px';
+    container.appendChild(svg);
+  }
+  svg.innerHTML = s;
+  // bind events
+  $$('[data-link]',svg).forEach(p=>{
+    p.addEventListener('mouseenter',e=>showLinkTip(e,linkById(e.target.dataset.link)));
+    p.addEventListener('mousemove',moveTip);
+    p.addEventListener('mouseleave',hideTip);
+    p.addEventListener('click',e=>{ e.stopPropagation(); openDetail(e.target.dataset.link); });
+  });
+  $$('[data-sw]',svg).forEach(c=>{
+    c.addEventListener('click',e=>{ e.stopPropagation(); focusSwitch(e.target.dataset.sw); });
+  });
+}
+
+APP._tip=null;
+function showLinkTip(e,l){
+  hideTip();
+  const u=Math.max(l.a_metrics.utilization,l.b_metrics.utilization);
+  const tip=el(`<div class="chart-tip" style="opacity:1"><b>${l.name}</b><br>${swName(l.a.sw)} ↔ ${swName(l.b.sw)}<br>${statusPill(l.status)} · util ${fmt(u,0)}%</div>`);
+  document.body.appendChild(tip); APP._tip=tip; moveTip(e);
+}
+function moveTip(e){
+  if(!APP._tip)return;
+  APP._tip.style.left=(e.clientX+14)+'px'; APP._tip.style.top=(e.clientY+14)+'px';
+}
+function hideTip(){ if(APP._tip){APP._tip.remove();APP._tip=null} }
+
+function focusSwitch(id){
+  // open inventory-style quick view via detail panel
+  const s=swObj(id); if(!s)return;
+  openSwitchDetail(id);
+}
+
+// ===== Legend =====
+APP.LEGEND=[
+  {c:'var(--green)',n:'Normal / healthy'}, {c:'var(--blue)',n:'Moderate traffic'},
+  {c:'var(--orange)',n:'High utilization / degraded'}, {c:'var(--red)',n:'Down / critical'},
+  {c:'var(--grey)',n:'Unknown / unavailable'}, {c:'var(--purple)',n:'Failover / protection'},
+];
+function renderLegend(container){
+  container.innerHTML = APP.LEGEND.map(l=>`<div class="li"><span class="sw" style="background:${l.c}"></span>${l.n}</div>`).join('')
+    + `<div class="li" style="margin-left:auto"><span class="nd" style="background:var(--cisco)"></span>core</div>`
+    + `<div class="li"><span class="nd" style="background:var(--orange)"></span>distribution</div>`
+    + `<div class="li"><span class="nd" style="background:var(--grey)"></span>access</div>`;
+}
+
+/* ============================================================
+   5. DETAIL PANEL (link / switch)
+   ============================================================ */
+function openDetail(linkId){
+  const l=linkById(linkId); if(!l)return;
+  const p=$('#detailPanel');
+  $('#dpTitle').innerHTML = `${statusPill(l.status)} <span style="margin-left:4px">${l.name}</span>`;
+  $('#dpBody').innerHTML = detailBody(l);
+  p.classList.add('open');
+  const mini=$('#dpMini');
+  if(mini){ lineChart(mini, [{name:'RX Mbps',data:l.history.slice(-40).map(h=>h.v),color:'#00bceb',area:true}], {min:0,dec:0,h:90,legend:false}); }
+}
+function openSwitchDetail(swId){
+  const s=swObj(swId); if(!s)return;
+  const p=$('#detailPanel');
+  $('#dpTitle').innerHTML = `<span style="color:var(--cisco)">${s.name}</span>`;
+  $('#dpBody').innerHTML = switchDetailBody(s);
+  p.classList.add('open');
+}
+function closeDetail(){ $('#detailPanel').classList.remove('open'); }
+
+function metricRow(m,label){
+  if(!m||!m.dom_supported){
+    return `<div class="dp-item"><div class="k">${label} TX power</div><div class="v muted">Unsupported</div></div>
+            <div class="dp-item"><div class="k">${label} RX power</div><div class="v muted">Unsupported</div></div>`;
+  }
+  return `<div class="dp-item"><div class="k">${label} TX power</div><div class="v">${fmt(m.tx_dbm,2)}<span class="u"> dBm</span></div></div>
+          <div class="dp-item"><div class="k">${label} RX power</div><div class="v">${fmt(m.rx_dbm,2)}<span class="u"> dBm</span></div></div>`;
+}
+
+function detailBody(l){
+  const a=swObj(l.a.sw), b=swObj(l.b.sw);
+  const ma=l.a_metrics, mb=l.b_metrics;
+  const u=Math.max(ma.utilization,mb.utilization);
+  const capFmt = l.capacity_mbps>=1000? (l.capacity_mbps/1000)+' Gbps' : l.capacity_mbps+' Mbps';
+  let incidentHtml='';
+  if(l.incident){
+    const i=l.incident;
+    const open=i.closed? 'Closed':'Open';
+    incidentHtml=`<div class="dp-sec"><h5>Active Incident</h5>
+      <div class="dp-item" style="margin-bottom:8px"><div class="k">Incident ${open}</div>
+      <div class="v" style="font-size:12px">${i.id} · ${i.type}</div>
+      <div class="muted" style="font-size:11px;margin-top:4px">Opened ${fmtDate(i.opened)} (${timeAgo(i.opened)})<br>Cause: ${i.cause}</div></div></div>`;
+  }
+  return `
+  <div class="dp-sec">
+    <h5>Link</h5>
+    <div class="dp-grid">
+      <div class="dp-item"><div class="k">Status</div><div class="v">${statusPill(l.status)}</div></div>
+      <div class="dp-item"><div class="k">Capacity</div><div class="v">${capFmt}</div></div>
+      <div class="dp-item"><div class="k">Ring member</div><div class="v">${l.ring?'Yes':'No'}</div></div>
+      <div class="dp-item"><div class="k">Verification</div><div class="v" style="font-size:12px">${l.verification}</div></div>
+      <div class="dp-item"><div class="k">Peak utilization</div><div class="v">${fmt(u,1)}<span class="u">%</span></div></div>
+      <div class="dp-item"><div class="k">Last poll</div><div class="v" style="font-size:12px">${timeAgo(Math.max(ma.last_poll,mb.last_poll))}</div></div>
+    </div>
+  </div>
+  <div class="dp-sec"><h5>Endpoint A — ${a.name}</h5>
+    ${endpointCard(ma,l.a.if,'A')}
+  </div>
+  <div class="dp-sec"><h5>Endpoint B — ${b.name}</h5>
+    ${endpointCard(mb,l.b.if,'B')}
+  </div>
+  <div class="dp-sec"><h5>Traffic Trend (RX, last 60 samples)</h5>
+    <div id="dpMini" class="mini-chart"></div>
+  </div>
+  ${incidentHtml}`;
+}
+function endpointCard(m,ifname,label){
+  if(m.oper_status==='down'){
+    return `<div class="endpoint-card"><div class="ep-h"><b>${ifname}</b>${statusPill('down')}</div>
+    <div class="muted" style="font-size:11px">ifOperStatus: down · no telemetry<br>RX 0.0 Mbps · TX 0.0 Mbps</div></div>`;
+  }
+  const errLine = (m.errors||m.crc)? `<span style="color:var(--orange)">errors ${m.errors||0} · CRC ${m.crc||0}</span>` : `<span class="muted">no errors</span>`;
+  return `<div class="endpoint-card"><div class="ep-h"><b>${ifname}</b>${statusPill('up')}</div>
+    <div class="dp-grid" style="margin-bottom:0">
+      <div class="dp-item"><div class="k">RX</div><div class="v">${fmt(m.rx_mbps,1)}<span class="u"> Mbps</span></div></div>
+      <div class="dp-item"><div class="k">TX</div><div class="v">${fmt(m.tx_mbps,1)}<span class="u"> Mbps</span></div></div>
+      <div class="dp-item"><div class="k">Utilization</div><div class="v">${fmt(m.utilization,1)}<span class="u">%</span></div></div>
+      <div class="dp-item"><div class="k">Errors</div><div class="v" style="font-size:12px">${errLine}</div></div>
+    </div>
+    <div class="dp-grid mt8">
+      ${metricRow(m,'')}
+      <div class="dp-item"><div class="k">SFP temp</div><div class="v">${fmt(m.temp_c,1)}<span class="u"> °C</span></div></div>
+      <div class="dp-item"><div class="k">Bias current</div><div class="v">${fmt(m.bias_ma,2)}<span class="u"> mA</span></div></div>
+      <div class="dp-item"><div class="k">Voltage</div><div class="v">${fmt(m.voltage_v,2)}<span class="u"> V</span></div></div>
+      <div class="dp-item"><div class="k">Last counter Δ</div><div class="v" style="font-size:11px">${timeAgo(m.last_poll)}</div></div>
+    </div></div>`;
+}
+function switchDetailBody(s){
+  const links=APP.LINKS.filter(l=>l.a.sw===s.id||l.b.sw===s.id);
+  const ifs=links.map(l=>{
+    const side=l.a.sw===s.id?'a':'b';
+    const m=l[side+'_metrics'];
+    return `<tr><td class="mono">${l[side].if}</td><td>${statusPill(m.oper_status==='down'?'down':'up')}</td><td class="num">${fmt(m.rx_mbps,1)}</td><td class="num">${fmt(m.tx_mbps,1)}</td><td class="num">${fmt(m.utilization,0)}%</td><td>${l.name}</td></tr>`;
+  }).join('');
+  return `<div class="dp-sec"><h5>Identity</h5>
+    <div class="dp-grid">
+      <div class="dp-item"><div class="k">Management IP</div><div class="v" style="font-size:13px">${s.ip}</div></div>
+      <div class="dp-item"><div class="k">Model</div><div class="v" style="font-size:12px">${s.model}</div></div>
+      <div class="dp-item"><div class="k">IOS / IOS-XE</div><div class="v" style="font-size:12px">${s.ios}</div></div>
+      <div class="dp-item"><div class="k">Serial</div><div class="v" style="font-size:12px">${s.serial}</div></div>
+      <div class="dp-item"><div class="k">Location</div><div class="v" style="font-size:12px">${s.loc}</div></div>
+      <div class="dp-item"><div class="k">Role / Status</div><div class="v" style="font-size:12px">${s.role} ${statusPill(switchStatus(s.id))}</div></div>
+    </div></div>
+    <div class="dp-sec"><h5>Fiber Interfaces (${links.length})</h5>
+    <table><thead><tr><th>Interface</th><th>Status</th><th class="num">RX Mbps</th><th class="num">TX Mbps</th><th class="num">Util</th><th>Link</th></tr></thead><tbody>${ifs}</tbody></table></div>`;
+}
+
+/* ============================================================
+   6. CHARTS — lightweight SVG line / area
+   ============================================================ */
+function lineChart(container, series, opts){
+  opts=opts||{};
+  const w=container.clientWidth||560, h=opts.h||200, pad={l:46,r:14,t:14,b:28};
+  const svg=el(`<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px"></svg>`);
+  container.innerHTML='';
+  const all=series.flatMap(s=>s.data);
+  if(!all.length){container.innerHTML='<div class="empty">no data</div>';return}
+  const minV=opts.min!=null?opts.min:Math.min(...all), maxV=opts.max!=null?opts.max:Math.max(...all);
+  const range=maxV-minV||1;
+  const xs=series[0].data.map((_,i)=> pad.l + i*(w-pad.l-pad.r)/(series[0].data.length-1||1));
+  const y=v=> h-pad.b - (v-minV)/range*(h-pad.t-pad.b);
+  // grid
+  const NS='http://www.w3.org/2000/svg'; const g=document.createElementNS(NS,'g');
+  for(let i=0;i<=4;i++){
+    const val=minV+range*i/4;
+    const yy=y(val);
+    g.innerHTML+=`<line x1="${pad.l}" y1="${yy}" x2="${w-pad.r}" y2="${yy}" stroke="#1e2942" stroke-width="1"/><text x="${pad.l-6}" y="${yy+3}" text-anchor="end" font-size="9" fill="#6b7a96">${fmt(val,opts.dec==null?1:opts.dec)}</text>`;
+  }
+  // x labels (first/mid/last)
+  series.forEach((s,si)=>{
+    let d=''; s.data.forEach((v,i)=>{ d+= (i?' L':'M')+xs[i]+' '+y(v); });
+    const area=s.area? `<path d="${d} L ${xs[xs.length-1]} ${y(minV)} L ${xs[0]} ${y(minV)} Z" fill="${s.color}" opacity="0.13"/>`:'';
+    g.innerHTML+=area+`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
+    // dots on last point
+    const lp=s.data[s.data.length-1];
+    g.innerHTML+=`<circle cx="${xs[xs.length-1]}" cy="${y(lp)}" r="3" fill="${s.color}"/>`;
+  });
+  svg.appendChild(g);
+  // legend
+  if(opts.legend!==false){
+    const lg=el(`<div style="display:flex;gap:14px;font-size:11px;margin-top:6px;flex-wrap:wrap"></div>`);
+    series.forEach(s=>{ lg.innerHTML+=`<div style="display:flex;align-items:center;gap:6px;color:var(--text2)"><span style="width:14px;height:3px;background:${s.color};border-radius:2px"></span>${s.name}</div>` });
+    container.appendChild(svg); container.appendChild(lg);
+  } else container.appendChild(svg);
+}
+
+/* ============================================================
+   7. PAGE RENDERERS
+   ============================================================ */
+
+// ---------- OVERVIEW ----------
+APP.PAGE_RENDER.overview=function(){
+  const online=APP.SWITCHES.filter(s=>switchStatus(s.id)!=='down').length;
+  const offline=APP.SWITCHES.length-online;
+  const up=APP.LINKS.filter(l=>l.status==='up').length;
+  const down=APP.LINKS.filter(l=>l.status==='down').length;
+  const degraded=APP.LINKS.filter(l=>l.status==='degraded').length;
+  const unknown=APP.LINKS.filter(l=>l.status==='unknown').length;
+  const rh=ringHealth();
+  const totRx=APP.LINKS.reduce((s,l)=>s+(l.a_metrics.rx_mbps||0)+(l.b_metrics.rx_mbps||0),0);
+  const totTx=APP.LINKS.reduce((s,l)=>s+(l.a_metrics.tx_mbps||0)+(l.b_metrics.tx_mbps||0),0);
+  const openA=APP.ALERTS.filter(a=>a.status==='open').length;
+  const kpis=[
+    {cls:online===APP.SWITCHES.length?'ok':'warn',lbl:'Devices Online',val:online+'<span class="unit">/'+APP.SWITCHES.length+'</span>',meta:`<span class="down">${offline} offline</span>`},
+    {cls:down>0?'bad':degraded>0?'warn':'ok',lbl:'Links Up',val:up+'<span class="unit">/'+APP.LINKS.length+'</span>',meta:`<span class="down">${down} down</span><span class="down" style="color:var(--orange)">${degraded} deg</span>`},
+    {cls:rh.cls==='healthy'?'ok':rh.cls==='partitioned'?'bad':'warn',lbl:'Ring Health',val:rh.label.toUpperCase().slice(0,8),meta:rh.reason},
+    {cls:'',lbl:'Total RX',val:fmt(totRx/1000,2)+'<span class="unit"> Gbps</span>',meta:'aggregate ingress'},
+    {cls:'',lbl:'Total TX',val:fmt(totTx/1000,2)+'<span class="unit"> Gbps</span>',meta:'aggregate egress'},
+    {cls:openA>0?'bad':'ok',lbl:'Active Alerts',val:openA,meta:`${APP.ALERTS.filter(a=>a.status==='acknowledged').length} ack · ${APP.ALERTS.filter(a=>a.status==='closed').length} closed`},
+  ];
+  $('#ovKpis').innerHTML=kpis.map(k=>`<div class="kpi ${k.cls}"><div class="lbl">${k.lbl}</div><div class="val">${k.val}</div><div class="meta">${k.meta}</div></div>`).join('');
+
+  $('#ovRingSub').textContent=rh.label+' — '+rh.reason;
+  topoSVG(null,null,$('#ovMiniTopo'),{h:240});
+
+  // health trend: synthetic 24h of healthy/degraded ratio
+  const trend=[]; for(let i=0;i<24;i++){ trend.push(95+Math.sin(i/3)*4 - (i>14&&i<17?12:0) - (i===15?5:0)); }
+  lineChart($('#ovTrend'),[{name:'Health %',data:trend,color:'var(--green)',area:true}],{min:80,max:100,dec:0,h:200});
+
+  // recent incidents
+  const inc=APP.ALERTS.slice(0,6);
+  $('#ovIncidents').innerHTML=`<table><thead><tr><th>Severity</th><th>Incident</th><th>Target</th><th>Status</th><th class="num">Opened</th></tr></thead><tbody>${
+    inc.map(a=>`<tr><td>${sevPill(a.sev)}</td><td>${a.title}</td><td class="muted">${a.target}</td><td>${statusPill(a.status==='acknowledged'?'failover':a.status==='open'?'down':'up').replace('DOWN','OPEN').replace('FAILOVER','ACK').replace('UP','CLOSED')}</td><td class="num muted">${timeAgo(a.opened)}</td></tr>`).join('')
+  }</tbody></table>`;
+
+  // link mix bar
+  const total=APP.LINKS.length;
+  const segs=[['up',up,'var(--green)'],['degraded',degraded,'var(--orange)'],['down',down,'var(--red)'],['unknown',unknown,'var(--grey)']];
+  $('#ovLinkMix').innerHTML=`<div class="bar-seg" style="height:22px">${
+    segs.filter(s=>s[1]>0).map(s=>`<div class="s" style="width:${s[1]/total*100}%;background:${s[2]}" title="${s[0]}: ${s[1]}"></div>`).join('')
+  }</div>
+  <div class="flex aic jcb mt12">${segs.map(s=>`<div class="flex aic gap" style="gap:7px"><span class="legend"><span class="sw" style="background:${s[2]};width:10px;height:10px;border-radius:50%;display:inline-block"></span></span><div><div style="font-size:18px;font-weight:700;color:#fff">${s[1]}</div><div class="muted" style="font-size:10px;text-transform:uppercase">${s[0]}</div></div></div>`).join('')}</div>`;
+};
+
+// ---------- TOPOLOGY ----------
+APP.PAGE_RENDER.topology=function(){
+  renderLegend($('#topoLegend'));
+  topoSVG(null,null,$('#topoSvg'));
+};
+
+// ---------- FIBER MONITORING ----------
+APP.PAGE_RENDER.fiber=function(){
+  $('#fiberSub').textContent=APP.LINKS.length+' mapped fiber links · '+APP.LINKS.filter(l=>l.ring).length+' ring edges';
+  const rows=APP.LINKS.map(l=>{
+    const ma=l.a_metrics,mb=l.b_metrics;
+    const u=Math.max(ma.utilization,mb.utilization);
+    return `<tr data-link="${l.id}" style="cursor:pointer">
+      <td><b>${l.name}</b>${l.ring?'<span class="tag" style="margin-left:6px">RING</span>':''}</td>
+      <td>${swName(l.a.sw)} <span class="muted">${l.a.if}</span></td>
+      <td>${swName(l.b.sw)} <span class="muted">${l.b.if}</span></td>
+      <td>${statusPill(l.status)}</td>
+      <td class="num">${fmt(ma.rx_mbps,1)} / ${fmt(ma.tx_mbps,1)}</td>
+      <td class="num">${fmt(mb.rx_mbps,1)} / ${fmt(mb.tx_mbps,1)}</td>
+      <td class="num">${fmt(u,0)}%</td>
+      <td class="num">${ma.dom_supported?fmt(ma.rx_dbm,1)+' / '+fmt(mb.rx_dbm,1):'<span class="muted">n/a</span>'}</td>
+      <td class="num">${ma.errors+mb.errors>0?'<span style="color:var(--orange)">'+(ma.errors+mb.errors)+'</span>':'<span class="muted">0</span>'}</td>
+      <td class="muted">${timeAgo(Math.max(ma.last_poll,mb.last_poll))}</td>
+    </tr>`;
+  }).join('');
+  $('#fiberTable').innerHTML=`<table><thead><tr><th>Link</th><th>Endpoint A</th><th>Endpoint B</th><th>Status</th><th class="num">A RX/TX Mbps</th><th class="num">B RX/TX Mbps</th><th class="num">Util</th><th class="num">RX dBm A/B</th><th class="num">Errors</th><th>Last Poll</th></tr></thead><tbody>${rows}</tbody></table>`;
+  $$('#fiberTable tr[data-link]').forEach(tr=>tr.onclick=()=>openDetail(tr.dataset.link));
+};
+
+// ---------- TRAFFIC ANALYTICS ----------
+APP.PAGE_RENDER.traffic=function(){
+  const sel=$('#trLink');
+  if(!sel.options.length){
+    APP.LINKS.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name+' ('+swName(l.a.sw)+'↔'+swName(l.b.sw)+')';sel.appendChild(o)});
+    if(!$('#trLink').value && APP.LINKS[0]) sel.value=APP.LINKS[0].id;
+  }
+  drawTraffic();
+};
+function drawTraffic(){
+  const lid=$('#trLink').value||APP.LINKS[0].id;
+  const l=linkById(lid); if(!l)return;
+  const dir=$('#trDir').value, range=+$('#trRange').value;
+  const pts=Math.min(60, l.history.length);
+  // synthesize TX series from RX
+  const rx=l.history.slice(-pts).map(p=>p.v);
+  const tx=rx.map(v=>v*rand(0.7,1.05));
+  const cap=l.capacity_mbps;
+  const dirOpt=dir==='RX only'?{rx:true,tx:false}:dir==='TX only'?{rx:false,tx:true}:{rx:true,tx:true};
+  const series=[];
+  if(dirOpt.rx)series.push({name:'RX Mbps',data:rx,color:'var(--green)',area:true});
+  if(dirOpt.tx)series.push({name:'TX Mbps',data:tx,color:'var(--cisco)',area:true});
+  $('#trSub1').textContent=l.name+' · '+ (range>=1440?(range/1440)+'d':(range/60)+'h');
+  lineChart($('#trChart1'),series,{min:0,max:cap,dec:0});
+  const utilSeries=[];
+  if(dirOpt.rx)utilSeries.push({name:'RX util %',data:rx.map(v=>v/cap*100),color:'var(--green)'});
+  if(dirOpt.tx)utilSeries.push({name:'TX util %',data:tx.map(v=>v/cap*100),color:'var(--cisco)'});
+  $('#trSub2').textContent='vs '+cap+' Mbps capacity';
+  lineChart($('#trChart2'),utilSeries,{min:0,max:100,dec:0});
+  // top links
+  const ranked=APP.LINKS.map(l=>({l,u:Math.max(l.a_metrics.utilization,l.b_metrics.utilization),rx:l.a_metrics.rx_mbps+l.b_metrics.rx_mbps})).sort((a,b)=>b.u-a.u);
+  $('#trTop').innerHTML=`<table><thead><tr><th>Link</th><th>Endpoints</th><th class="num">Peak Util</th><th class="num">RX Mbps</th><th class="num">Capacity</th><th>Health</th></tr></thead><tbody>${
+    ranked.map(r=>`<tr data-link="${r.l.id}" style="cursor:pointer"><td><b>${r.l.name}</b></td><td class="muted">${swName(r.l.a.sw)} ↔ ${swName(r.l.b.sw)}</td><td class="num">${fmt(r.u,1)}%</td><td class="num">${fmt(r.rx,0)}</td><td class="num">${r.l.capacity_mbps/1000} Gbps</td><td>${statusPill(r.l.status)}</td></tr>`).join('')
+  }</tbody></table>`;
+  $$('#trTop tr[data-link]').forEach(tr=>tr.onclick=()=>openDetail(tr.dataset.link));
+}
+
+// ---------- SFP DOM ----------
+APP.PAGE_RENDER.sfp=function(){
+  // pick top 3 SFPs for gauges (highest temp / lowest rx)
+  const items=APP.LINKS.flatMap(l=>{
+    return [{l,side:'a',m:l.a_metrics,sw:swName(l.a.sw),if:l.a.if},
+            {l,side:'b',m:l.b_metrics,sw:swName(l.b.sw),if:l.b.if}]
+      .filter(x=>x.m.dom_supported && x.m.oper_status!=='down');
+  });
+  const show=items.slice(0,3);
+  $('#sfpGauges').innerHTML=show.map(x=>gaugeCard(x)).join('');
+  // table
+  const rows=APP.LINKS.flatMap(l=>{
+    return [['a',l.a_metrics,swName(l.a.sw),l.a.if],['b',l.b_metrics,swName(l.b.sw),l.b.if]].map(([side,m,sw,ifn])=>{
+      const txWarn=m.tx_dbm!=null&&m.tx_dbm>m.tx_thresh.warn;
+      const rxWarn=m.rx_dbm!=null&&m.rx_dbm<m.rx_thresh.warn;
+      const tempWarn=m.temp_c>m.temp_thresh.warn-15;
+      return `<tr><td><b>${sw}</b></td><td class="mono">${ifn}</td><td>${l.name}</td>
+        <td>${m.dom_supported?'<span class="pill up"><span class="d"></span>yes</span>':'<span class="pill unknown"><span class="d"></span>no</span>'}</td>
+        <td class="num ${txWarn?'warn':''}" style="${txWarn?'color:var(--orange)':''}">${m.dom_supported?fmt(m.tx_dbm,2):'—'}</td>
+        <td class="num" style="${rxWarn?'color:var(--orange)':''}">${m.dom_supported?fmt(m.rx_dbm,2):'—'}</td>
+        <td class="num" style="${tempWarn?'color:var(--orange)':''}">${m.dom_supported?fmt(m.temp_c,1):'—'}</td>
+        <td class="num">${m.dom_supported?fmt(m.bias_ma,2):'—'}</td>
+        <td class="num">${m.dom_supported?fmt(m.voltage_v,3):'—'}</td>
+        <td>${m.dom_supported?(txWarn||rxWarn||tempWarn?'<span class="pill warn">warn</span>':'<span class="pill up"><span class="d"></span>ok</span>'):'<span class="muted">—</span>'}</td>
+      </tr>`;
+    });
+  }).join('');
+  $('#sfpTable').innerHTML=`<table><thead><tr><th>Switch</th><th>Interface</th><th>Link</th><th>DOM</th><th class="num">TX dBm</th><th class="num">RX dBm</th><th class="num">Temp °C</th><th class="num">Bias mA</th><th class="num">Volt V</th><th>Alarm</th></tr></thead><tbody>${rows}</tbody></table>`;
+};
+function gaugeCard(x){
+  const m=x.m;
+  const tempPct=Math.min(100,(m.temp_c/80)*100);
+  const rxPct=Math.min(100,Math.max(0,((m.rx_dbm+25)/30)*100));
+  const biasPct=Math.min(100,(m.bias_ma/12)*100);
+  return `<div class="card"><div class="hd"><h3>☼ ${x.sw}</h3><span class="sub">${x.if} · ${x.l.name}</span></div><div class="bd">
+    <div style="text-align:center;margin-bottom:8px">
+      <div style="font-size:24px;font-weight:700;color:#fff">${fmt(m.temp_c,1)}<span style="font-size:12px;color:var(--text2)"> °C</span></div>
+      <div class="muted" style="font-size:10px">SFP temperature</div>
+      <div class="progress mt8"><div class="bar" style="width:${tempPct}%;background:${tempPct>75?'var(--red)':tempPct>60?'var(--orange)':'var(--green)'}"></div></div>
+    </div>
+    <div class="dp-grid">
+      <div class="dp-item"><div class="k">TX power</div><div class="v">${fmt(m.tx_dbm,2)}<span class="u"> dBm</span></div></div>
+      <div class="dp-item"><div class="k">RX power</div><div class="v">${fmt(m.rx_dbm,2)}<span class="u"> dBm</span></div></div>
+      <div class="dp-item"><div class="k">Bias</div><div class="v">${fmt(m.bias_ma,2)}<span class="u"> mA</span></div></div>
+      <div class="dp-item"><div class="k">Voltage</div><div class="v">${fmt(m.voltage_v,3)}<span class="u"> V</span></div></div>
+    </div></div></div>`;
+}
+
+// ---------- PATH ANALYSIS ----------
+APP.PAGE_RENDER.path=function(){
+  const src=$('#paSrc'),dst=$('#paDst');
+  if(!src.options.length){
+    APP.SWITCHES.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name+' ('+s.ip+')';src.appendChild(o.cloneNode(true));dst.appendChild(o)});
+    if(APP.SWITCHES[1]) dst.value=APP.SWITCHES[1].id;
+  }
+  // auto-trace on first load
+  if(!APP._paDrawn){ APP._paDrawn=true; tracePath(); }
+};
+function tracePath(){
+  const src=$('#paSrc').value, dst=$('#paDst').value;
+  if(src===dst){ $('#paHops').innerHTML='<div class="empty">Source equals destination.</div>'; topoSVG(null,null,$('#paSvg')); return; }
+  const path = ringShortestPath(src,dst);
+  // edges used
+  const edges=[];
+  for(let i=0;i<path.length-1;i++){
+    const a=path[i],b=path[i+1];
+    const l=APP.LINKS.find(x=>(x.a.sw===a&&x.b.sw===b)||(x.a.sw===b&&x.b.sw===a));
+    if(l) edges.push({linkId:l.id,from:a,to:b});
+  }
+  topoSVG(null,{edges},$('#paSvg'));
+  // hops
+  const vlan=$('#paVlan').value.split(' ')[0];
+  const hops=path.map((id,i)=>{
+    const s=swObj(id);
+    let via='—';
+    if(i>0){const l=APP.LINKS.find(x=>(x.a.sw===path[i-1]&&x.b.sw===id)||(x.a.sw===id&&x.b.sw===path[i-1])); if(l){const side=l.a.sw===id?'a':'b'; via=l[side].if}}
+    return {s, via, link: i>0? APP.LINKS.find(x=>(x.a.sw===path[i-1]&&x.b.sw===id)||(x.a.sw===id&&x.b.sw===path[i-1])):null};
+  });
+  $('#paHops').innerHTML=`
+    <div class="dp-item" style="margin-bottom:10px"><div class="k">Path</div><div class="v" style="font-size:12px">${path.map(id=>swName(id)).join(' → ')}</div></div>
+    <div class="dp-grid" style="margin-bottom:10px">
+      <div class="dp-item"><div class="k">Hops</div><div class="v">${path.length-1}</div></div>
+      <div class="dp-item"><div class="k">VLAN</div><div class="v" style="font-size:13px">${vlan}</div></div>
+      <div class="dp-item"><div class="k">Evidence</div><div class="v" style="font-size:11px">CDP+STP+FDB</div></div>
+      <div class="dp-item"><div class="k">Confidence</div><div class="v" style="font-size:13px;color:var(--green)">inferred</div></div>
+    </div>
+    <table><thead><tr><th>#</th><th>Switch</th><th>Via</th><th>Link</th><th>Status</th></tr></thead><tbody>${
+      hops.map((h,i)=>`<tr><td>${i}</td><td><b>${h.s.name}</b></td><td class="mono">${h.via}</td><td>${h.link?h.link.name:'—'}</td><td>${h.link?statusPill(h.link.status):statusPill('up')}</td></tr>`).join('')
+    }</tbody></table>
+    <div class="muted mt8" style="font-size:10.5px">⚠ SNMP counters alone cannot determine exact flow path. CDP/LLDP describes adjacency; STP provides protocol state; forwarding tables infer VLAN paths; NetFlow adds flow observations. Label inferred vs observed.</div>`;
+}
+function ringShortestPath(src,dst){
+  // BFS on ring graph (ring links + trunks)
+  const adj={}; APP.SWITCHES.forEach(s=>adj[s.id]=[]);
+  APP.LINKS.forEach(l=>{ if(l.status==='down')return; adj[l.a.sw].push(l.b.sw); adj[l.b.sw].push(l.a.sw); });
+  const prev={}; const seen={src:true}; const q=[src];
+  while(q.length){const n=q.shift(); if(n===dst)break; (adj[n]||[]).forEach(x=>{if(!seen[x]){seen[x]=1;prev[x]=n;q.push(x)}});}
+  if(!seen[dst])return [src,dst];
+  const path=[dst]; let c=dst; while(c!==src){c=prev[c];path.unshift(c)} return path;
+}
+
+// ---------- INVENTORY ----------
+APP.PAGE_RENDER.inventory=function(){
+  const models=[...new Set(APP.SWITCHES.map(s=>s.model))];
+  const sel=$('#invModel');
+  if(!sel.options.length){ const all=document.createElement('option');all.value='';all.textContent='All models';sel.appendChild(all); models.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o)}); }
+  const q=($('#invSearch').value||'').toLowerCase(); const mf=sel.value;
+  const list=APP.SWITCHES.filter(s=>(!q||s.name.toLowerCase().indexOf(q)>-1||s.ip.indexOf(q)>-1||s.model.toLowerCase().indexOf(q)>-1)&&(!mf||s.model===mf));
+  $('#invTable').innerHTML=`<table><thead><tr><th>Switch</th><th>Management IP</th><th>Model</th><th>IOS / IOS-XE</th><th>Serial</th><th>Location</th><th>Role</th><th>Status</th><th class="num">Links</th><th class="num">Uptime</th><th>Last Poll</th></tr></thead><tbody>${
+    list.map(s=>{const links=APP.LINKS.filter(l=>l.a.sw===s.id||l.b.sw===s.id).length; return `<tr data-sw="${s.id}" style="cursor:pointer"><td><b>${s.name}</b></td><td class="mono">${s.ip}</td><td>${s.model}</td><td class="mono">${s.ios}</td><td class="mono">${s.serial}</td><td>${s.loc}</td><td><span class="tag">${s.role}</span></td><td>${statusPill(switchStatus(s.id))}</td><td class="num">${links}</td><td class="num">${(rand(20,60)|0)}d</td><td class="muted">${timeAgo(nowSec()-Math.floor(rand(2,30)))}</td></tr>`}).join('')
+  }</tbody></table>`;
+  $$('#invTable tr[data-sw]').forEach(tr=>tr.onclick=()=>openSwitchDetail(tr.dataset.sw));
+};
+
+// ---------- DISCOVERY ----------
+APP.DISC_POOL=[
+  {ip:'10.10.10.21',name:'SW-ACC-09',model:'Catalyst 9300',ios:'17.06.03',sysdescr:'Cisco IOS Software [Fuji], Catalyst L3 Switch Software',status:'discovered'},
+  {ip:'10.10.10.22',name:'SW-ACC-10',model:'Catalyst 9200',ios:'17.04.01',sysdescr:'Cisco IOS Software [Amur], Catalyst L3 Switch Software',status:'discovered'},
+  {ip:'10.10.10.23',name:'unknown-23',model:'Catalyst 2960X',ios:'15.2(7)E5',sysdescr:'Cisco IOS Software, Catalyst L2 Switch Software',status:'discovered'},
+  {ip:'10.10.10.24',name:'(non-Cisco)',model:'Linux router',ios:'—',sysdescr:'Linux 5.10 — Ubiquiti EdgeRouter',status:'non-cisco'},
+  {ip:'10.10.10.25',name:'—',model:'—',ios:'—',sysdescr:'no SNMP response',status:'snmp-failed'},
+  {ip:'10.10.10.26',name:'SW-ACC-11',model:'Catalyst 3650',ios:'16.12.05',sysdescr:'Cisco IOS Software [Everest], Catalyst L3 Switch Software',status:'discovered'},
+  {ip:'10.10.10.27',name:'SW-CORE-01',model:'Catalyst 9300',ios:'17.06.03',sysdescr:'already registered',status:'registered'},
+];
+APP.PAGE_RENDER.discovery=function(){
+  renderHistory();
+};
+function renderHistory(){
+  $('#dcHistory').innerHTML=`<table><thead><tr><th>Scan ID</th><th>Range</th><th>Profile</th><th>Status</th><th class="num">Found</th><th>Started</th><th class="num">Duration</th><th>By</th></tr></thead><tbody>${
+    APP.SCAN_HISTORY.map(s=>`<tr><td class="mono">#${s.id}</td><td class="mono">${s.range}</td><td>${s.profile}</td><td>${statusPill(s.status==='completed'?'up':'down').replace('UP','DONE')}</td><td class="num">${s.found}</td><td class="muted">${timeAgo(s.started)}</td><td class="num">${dur(s.finished-s.started)}</td><td class="muted">${s.by}</td></tr>`).join('')
+  }</tbody></table>`;
+}
+APP.SCAN={running:false};
+function startScan(){
+  if(APP.SCAN.running)return;
+  const cidr=$('#dcCidr').value.trim();
+  // scope validation
+  const scopes=APP.SCOPES.filter(s=>s.enabled).map(s=>s.cidr);
+  const inScope = cidrInScope(cidr, scopes);
+  const warn=$('#dcScopeWarn');
+  if(!inScope){
+    warn.innerHTML=`<div class="pill down"><span class="d"></span>REJECTED</div> <span class="muted">Range <b>${cidr}</b> is outside authorized scan scopes (${scopes.join(', ') || 'none'}). Discovery is restricted to approved CIDRs only.</span>`;
+    toast('Scan rejected — outside authorized scope','bad');
+    return;
+  }
+  warn.innerHTML=`<div class="pill up"><span class="d"></span>AUTHORIZED</div> <span class="muted">Within scope ${cidr}. Proceeding with SNMPv3 read-only probe.</span>`;
+  $('#dcProgressWrap').style.display='block';
+  $('#dcResults').innerHTML='<div class="empty">Scanning…</div>';
+  APP.DISC_RESULTS=[];
+  APP.SCAN.running=true; $('#dcScan').disabled=true;
+  // count hosts
+  const hostCount = countHosts(cidr);
+  let done=0,found=0,unreach=0,err=0;
+  const total=hostCount;
+  const tickScan=()=>{
+    if(!APP.SCAN.running){ finishScan(true); return; }
+    // probe 1-2 hosts per tick
+    const step=Math.min(2,total-done);
+    for(let i=0;i<step;i++){
+      done++;
+      const ip=ipAt(cidr, done-1);
+      const r = probeResult(ip);
+      if(r.status==='discovered'||r.status==='registered')found++;
+      else if(r.status==='snmp-failed')unreach++;
+      if(Math.random()<0.05)err++;
+      APP.DISC_RESULTS.push(r);
+    }
+    const pct=Math.round(done/total*100);
+    $('#dcBar').style.width=pct+'%';
+    $('#dcScanLabel').textContent='Scanning '+cidr+' …';
+    $('#dcScanStat').textContent=done+'/'+total+' hosts';
+    $('#dcFound').textContent=found; $('#dcUnreach').textContent=unreach; $('#dcErr').textContent=err;
+    renderResults();
+    if(done>=total){ finishScan(false); }
+    else setTimeout(tickScan, 280);
+  };
+  tickScan();
+}
+function finishScan(cancelled){
+  APP.SCAN.running=false; $('#dcScan').disabled=false;
+  $('#dcScanLabel').textContent=cancelled?'Scan stopped':'Scan completed';
+  const id='10'+(Math.floor(Math.random()*90)+10);
+  APP.SCAN_HISTORY.unshift({id,range:$('#dcCidr').value,scope:cidrInScopeLabel($('#dcCidr').value),profile:$('#dcProfile').value,status:'completed',progress:100,started:nowSec()-120,finished:nowSec(),found:APP.DISC_RESULTS.filter(r=>r.status==='discovered'||r.status==='registered').length,by:'admin'});
+  renderHistory();
+  toast(cancelled?'Scan stopped':'Scan completed — '+APP.DISC_RESULTS.filter(r=>r.status==='discovered').length+' eligible devices','ok');
+}
+function probeResult(ip){
+  // already in inventory -> registered
+  const inv = APP.SWITCHES.find(s=>s.ip===ip);
+  if(inv) return {ip,name:inv.name,model:inv.model,ios:inv.ios,sysdescr:'already registered — '+inv.name+' ('+inv.serial+')',status:'registered'};
+  const last=+ip.split('.').pop();
+  const base=APP.DISC_POOL.find(p=>p.ip===ip);
+  if(base) return {...base};
+  // synthesize
+  if(last%7===0) return {ip,name:'—',model:'—',ios:'—',sysdescr:'ICMP up, SNMP timeout',status:'snmp-failed'};
+  if(last%5===0) return {ip,name:'host-'+last,model:'non-Cisco',ios:'—',sysdescr:'Juniper JUNOS 21.4',status:'non-cisco'};
+  const models=['Catalyst 9300','Catalyst 9200','Catalyst 3650','Catalyst 2960X'];
+  return {ip,name:'SW-NEW-'+last,model:pick(models),ios:pick(['17.06.03','17.04.01','16.12.05','15.2(7)E5']),sysdescr:'Cisco IOS Software, Catalyst Switch Software',status:'discovered'};
+}
+function renderResults(){
+  const groups={discovered:[],'snmp-failed':[],'non-cisco':[],registered:[],duplicate:[]};
+  APP.DISC_RESULTS.forEach(r=>{ (groups[r.status]||(groups.discovered)).push(r) });
+  const order=['discovered','registered','non-cisco','snmp-failed'];
+  const labels={discovered:'Discovered',registered:'Already registered','non-cisco':'Non-Cisco','snmp-failed':'SNMP failed'};
+  const counts={discovered:groups.discovered.length,registered:groups.registered.length,'non-cisco':groups['non-cisco'].length,'snmp-failed':groups['snmp-failed'].length};
+  $('#dcResults').innerHTML=`
+    <div class="flex gap" style="gap:16px;margin-bottom:12px">
+      ${order.map(k=>`<div><div style="font-size:18px;font-weight:700;color:#fff">${counts[k]}</div><div class="muted" style="font-size:10px;text-transform:uppercase">${labels[k]}</div></div>`).join('')}
+    </div>
+    <div class="scroll-y" style="max-height:360px">
+    ${APP.DISC_RESULTS.map(r=>{
+      const reg = r.status==='registered';
+      const elig = r.status==='discovered';
+      return `<div class="disc-row">
+        <span class="ip">${r.ip}</span>
+        <div class="name">${r.name}<div class="mdl">${r.model} ${r.ios!=='—'?'· IOS '+r.ios:''}</div></div>
+        <span class="muted" style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.sysdescr}</span>
+        ${r.status==='discovered'?'<span class="pill up"><span class="d"></span>discovered</span>':r.status==='registered'?'<span class="pill info">registered</span>':r.status==='non-cisco'?'<span class="pill unknown"><span class="d"></span>non-cisco</span>':'<span class="pill down"><span class="d"></span>snmp-failed</span>'}
+        ${elig?`<button class="btn sm primary" data-reg="${r.ip}">Register</button>`:reg?`<button class="btn sm" disabled>in inventory</button>`:''}
+      </div>`;
+    }).join('')}
+    </div>`;
+  $$('#dcResults [data-reg]').forEach(b=>b.onclick=()=>registerDevice(b.dataset.reg));
+}
+function registerDevice(ip){
+  const r=APP.DISC_RESULTS.find(x=>x.ip===ip); if(!r)return;
+  r.status='registered';
+  toast(r.name+' registered into inventory','ok');
+  renderResults();
+}
+function registerAll(){
+  let n=0;
+  APP.DISC_RESULTS.forEach(r=>{ if(r.status==='discovered'){ r.status='registered'; n++; } });
+  toast(n+' eligible devices registered','ok');
+  renderResults();
+}
+// CIDR helpers (simplified, supports /24-/28)
+function cidrToRange(cidr){
+  const m=cidr.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)\/(\d+)$/); if(!m)return null;
+  const base=(+m[1]<<24)+(+m[2]<<16)+(+m[3]<<8)+(+m[4]>>>0); const bits=+m[5];
+  const mask=bits===0?0:(0xFFFFFFFF<<(32-bits))>>>0;
+  const net=base&mask; const broad=net|(~mask>>>0);
+  return {net,broad,bits};
+}
+function countHosts(cidr){ const r=cidrToRange(cidr); if(!r)return 1; const h=r.bits>=31?2:(r.broad-r.net-1); return Math.max(1,h); }
+function ipAt(cidr,i){ const r=cidrToRange(cidr); if(!r)return cidr; const v=(r.net+1+i)>>>0; return ((v>>24)&255)+'.'+((v>>16)&255)+'.'+((v>>8)&255)+'.'+(v&255); }
+function cidrInScope(cidr,scopes){
+  const r=cidrToRange(cidr); if(!r)return false;
+  return scopes.some(sc=>{ const s=cidrToRange(sc); return s && r.net>=s.net && r.broad<=s.broad; });
+}
+function cidrInScopeLabel(cidr){ const sc=APP.SCOPES.filter(s=>s.enabled).find(s=>cidrInScope(cidr,[s.cidr])); return sc?sc.cidr:'—'; }
+
+// ---------- ALERTS ----------
+APP.PAGE_RENDER.alerts=function(){
+  const sev=$('#alSev').value, st=$('#alStat').value;
+  const list=APP.ALERTS.filter(a=>(!sev||a.sev===sev)&&(!st||a.status===st));
+  $('#alTable').innerHTML=`<table><thead><tr><th>Severity</th><th>Incident</th><th>Target</th><th>Status</th><th>Cause</th><th class="num">Opened</th><th class="num">Duration</th><th>Action</th></tr></thead><tbody>${
+    list.map(a=>`<tr data-alert="${a.id}"><td>${sevPill(a.sev)}</td><td>${a.title}</td><td class="muted">${a.target}</td><td>${alertStatusPill(a.status)}</td><td class="muted" style="font-size:11px">${a.cause}</td><td class="num muted">${timeAgo(a.opened)}</td><td class="num">${a.closed?dur(a.closed-a.opened):dur(nowSec()-a.opened)}</td><td>${a.status==='open'?'<button class="btn sm" data-ack="'+a.id+'">Ack</button>':a.status==='acknowledged'?'<button class="btn sm primary" data-close="'+a.id+'">Close</button>':'<span class="muted">—</span>'}</td></tr>`).join('')
+  }</tbody></table>`;
+  $$('#alTable [data-ack]').forEach(b=>b.onclick=()=>ackAlert(b.dataset.ack));
+  $$('#alTable [data-close]').forEach(b=>b.onclick=()=>closeAlert(b.dataset.close));
+};
+function alertStatusPill(s){ return s==='open'?'<span class="pill down"><span class="d"></span>OPEN</span>':s==='acknowledged'?'<span class="pill failover"><span class="d"></span>ACK</span>':'<span class="pill up"><span class="d"></span>CLOSED</span>'; }
+function ackAlert(id){ const a=APP.ALERTS.find(x=>x.id===id); if(a){a.status='acknowledged';a.ack=nowSec(); toast('Alert '+id+' acknowledged','ok'); APP.PAGE_RENDER.alerts();} }
+function closeAlert(id){ const a=APP.ALERTS.find(x=>x.id===id); if(a){a.status='closed';a.closed=nowSec(); toast('Alert '+id+' closed','ok'); APP.PAGE_RENDER.alerts();} }
+
+// ---------- REPORTS ----------
+APP.PAGE_RENDER.reports=function(){
+  if(!APP._rpInit){ APP._rpInit=true; generateReport(); }
+};
+function generateReport(){
+  const type=$('#rpType').value, range=+$('#rpRange').value;
+  const rangeLabel=range>=720?'30 days':range>=168?'7 days':'24 hours';
+  let html='';
+  if(type==='uptime'){
+    const rows=APP.SWITCHES.map(s=>{const avail=(95+Math.random()*4.9).toFixed(3); return `<tr><td>${s.name}</td><td>${s.ip}</td><td>${s.model}</td><td>${statusPill(switchStatus(s.id))}</td><td class="num">${avail}%</td><td class="num">${(Math.random()*120|0)}m</td></tr>`});
+    html=`<h4 style="margin-bottom:10px">Uptime &amp; Availability — ${rangeLabel}</h4>
+    <div class="dp-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+      <div class="dp-item"><div class="k">Avg availability</div><div class="v">99.74%</div></div>
+      <div class="dp-item"><div class="k">Total downtime</div><div class="v">3h 12m</div></div>
+      <div class="dp-item"><div class="k">Incidents</div><div class="v">${APP.ALERTS.length}</div></div>
+      <div class="dp-item"><div class="k">MTTR</div><div class="v">14m</div></div>
+    </div>
+    <table><thead><tr><th>Switch</th><th>IP</th><th>Model</th><th>Status</th><th class="num">Availability</th><th class="num">Downtime</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  } else if(type==='incident'){
+    html=`<h4 style="margin-bottom:10px">Ring Incidents — ${rangeLabel}</h4>
+    <table><thead><tr><th>ID</th><th>Severity</th><th>Incident</th><th>Target</th><th>Status</th><th class="num">Opened</th><th class="num">Duration</th><th>Cause</th></tr></thead><tbody>${
+      APP.ALERTS.map(a=>`<tr><td class="mono">${a.id}</td><td>${sevPill(a.sev)}</td><td>${a.title}</td><td class="muted">${a.target}</td><td>${alertStatusPill(a.status)}</td><td class="num">${fmtDate(a.opened)}</td><td class="num">${a.closed?dur(a.closed-a.opened):dur(nowSec()-a.opened)}</td><td class="muted" style="font-size:11px">${a.cause}</td></tr>`).join('')
+    }</tbody></table>`;
+  } else if(type==='traffic'){
+    const ranked=APP.LINKS.map(l=>({l,rx:l.a_metrics.rx_mbps+l.b_metrics.rx_mbps,u:Math.max(l.a_metrics.utilization,l.b_metrics.utilization)})).sort((a,b)=>b.rx-a.rx);
+    html=`<h4 style="margin-bottom:10px">Traffic Peaks — ${rangeLabel}</h4>
+    <table><thead><tr><th>Link</th><th>Endpoints</th><th class="num">Peak RX</th><th class="num">Peak Util</th><th class="num">Capacity</th></tr></thead><tbody>${
+      ranked.map(r=>`<tr><td><b>${r.l.name}</b></td><td class="muted">${swName(r.l.a.sw)} ↔ ${swName(r.l.b.sw)}</td><td class="num">${fmt(r.rx,0)} Mbps</td><td class="num">${fmt(r.u,1)}%</td><td class="num">${r.l.capacity_mbps/1000} Gbps</td></tr>`).join('')
+    }</tbody></table>`;
+  } else if(type==='optical'){
+    const items=APP.LINKS.flatMap(l=>[['A',l.a_metrics,swName(l.a.sw),l.a.if,l.name],['B',l.b_metrics,swName(l.b.sw),l.b.if,l.name]].filter(x=>x[1].dom_supported).map(x=>x));
+    html=`<h4 style="margin-bottom:10px">Optical Warnings — ${rangeLabel}</h4>
+    <table><thead><tr><th>Switch</th><th>Interface</th><th>Link</th><th class="num">TX dBm</th><th class="num">RX dBm</th><th class="num">Temp °C</th><th>State</th></tr></thead><tbody>${
+      items.filter(x=>x[1].temp_c>45||x[1].rx_dbm<-8).map(x=>`<tr><td>${x[2]}</td><td class="mono">${x[3]}</td><td>${x[4]}</td><td class="num">${fmt(x[1].tx_dbm,2)}</td><td class="num">${fmt(x[1].rx_dbm,2)}</td><td class="num">${fmt(x[1].temp_c,1)}</td><td><span class="pill warn">warn</span></td></tr>`).join('') || '<tr><td colspan="7" class="empty">No optical warnings in period</td></tr>'
+    }</tbody></table>`;
+  } else { // discovery
+    html=`<h4 style="margin-bottom:10px">Discovery Changes — ${rangeLabel}</h4>
+    <table><thead><tr><th>Scan</th><th>Range</th><th class="num">Found</th><th>Started</th><th>By</th></tr></thead><tbody>${
+      APP.SCAN_HISTORY.map(s=>`<tr><td class="mono">#${s.id}</td><td class="mono">${s.range}</td><td class="num">${s.found}</td><td class="muted">${fmtDate(s.started)}</td><td class="muted">${s.by}</td></tr>`).join('')
+    }</tbody></table>`;
+  }
+  $('#rpBody').innerHTML=html;
+}
+
+// ---------- SETTINGS ----------
+APP.PAGE_RENDER.settings=function(){
+  renderSettings('snmp');
+};
+function renderSettings(tab){
+  if(tab==='snmp'){
+    $('#set-snmp').innerHTML=`<div class="list-item" style="flex-direction:column;align-items:stretch">
+      ${APP.SNMP_PROFILES.map(p=>`<div class="list-item"><div class="li-h"><b>${p.name}</b><div class="sub">user: ${p.user} · auth: ${p.auth} · priv: ${p.priv} · level: ${p.level} · targets: ${p.targets}</div></div><div class="flex gap"><span class="pill up"><span class="d"></span>active</span><button class="btn sm">Edit</button></div></div>`).join('')}
+    </div>
+    <div class="mt12"><button class="btn primary">+ Add SNMP Profile</button></div>`;
+  } else if(tab==='poll'){
+    $('#set-poll').innerHTML=`<table><thead><tr><th>Metric</th><th>Interval</th><th>Method</th><th>Enabled</th></tr></thead><tbody>${
+      APP.POLL_SCHEDULES.map(p=>`<tr><td><b>${p.metric}</b></td><td class="mono">${p.interval}</td><td class="muted">${p.method}</td><td><div class="toggle on" data-poll></div></td></tr>`).join('')
+    }</tbody></table>`;
+    $$('#set-poll [data-poll]').forEach(t=>t.onclick=()=>t.classList.toggle('on'));
+  } else if(tab==='thresh'){
+    $('#set-thresh').innerHTML=`<table><thead><tr><th>Threshold</th><th class="num">Value</th><th>Unit</th><th>Action</th></tr></thead><tbody>${
+      APP.THRESHOLDS.map(t=>`<tr><td><b>${t.name}</b></td><td class="num" style="font-size:14px;color:var(--cisco)">${t.value}</td><td>${t.unit}</td><td><button class="btn sm">Edit</button></td></tr>`).join('')
+    }</tbody></table>`;
+  } else if(tab==='scope'){
+    $('#set-scope').innerHTML=`${APP.SCOPES.map(s=>`<div class="list-item"><div class="li-h"><b class="mono">${s.cidr}</b><div class="sub">${s.desc}</div></div><div class="flex gap"><div class="toggle ${s.enabled?'on':''}" data-scope></div></div></div>`).join('')}<div class="mt12"><button class="btn primary">+ Add Authorized Scope</button></div>`;
+    $$('#set-scope [data-scope]').forEach(t=>t.onclick=()=>t.classList.toggle('on'));
+  } else if(tab==='notif'){
+    $('#set-notif').innerHTML=`${APP.NOTIF.map(n=>`<div class="list-item"><div class="li-h"><b>${n.channel} → ${n.dest}</b><div class="sub">severity filter: ${n.sev}</div></div><div class="toggle ${n.enabled?'on':''}" data-notif></div></div>`).join('')}<div class="mt12"><button class="btn primary">+ Add Notification Channel</button></div>`;
+    $$('#set-notif [data-notif]').forEach(t=>t.onclick=()=>t.classList.toggle('on'));
+  } else if(tab==='rbac'){
+    $('#set-rbac').innerHTML=`<table><thead><tr><th>User</th><th>Role</th><th>Enabled</th><th>Last login</th><th>Action</th></tr></thead><tbody>${
+      APP.USERS.map(u=>`<tr><td><b>${u.user}</b></td><td><span class="tag">${u.role}</span></td><td>${u.enabled?'<span class="pill up"><span class="d"></span>yes</span>':'<span class="pill down"><span class="d"></span>no</span>'}</td><td class="muted">${u.last}</td><td><button class="btn sm">Edit</button></td></tr>`).join('')
+    }</tbody></table><div class="mt12"><button class="btn primary">+ Add User</button></div>`;
+  }
+  $$(`.settings-tabs a`).forEach(a=>a.classList.toggle('active',a.dataset.tab===tab));
+  $$('.set-pane').forEach(p=>p.classList.remove('active'));
+  $('#set-'+tab).classList.add('active');
+}
+
+/* ============================================================
+   8. INIT & WIRING
+   ============================================================ */
+function init(){
+  // nav
+  $$('.nav a').forEach(a=>a.onclick=()=>navigate(a.dataset.page));
+  // detail panel close
+  $('#dpClose').onclick=closeDetail;
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetail()});
+  // topology buttons
+  $('#btnTopoRefresh').onclick=()=>{ topoSVG(null,null,$('#topoSvg')); toast('Topology refreshed','ok'); };
+  $('#btnTopoSimCut').onclick=()=>{
+    const up=APP.LINKS.filter(l=>l.status==='up'&&l.ring);
+    if(!up.length){toast('No up ring links to cut','warn');return}
+    APP.SIM.simulateCut(pick(up).id);
+    topoSVG(null,null,$('#topoSvg'));
+  };
+  $('#btnTopoSimFix').onclick=()=>{ APP.SIM.restoreAll(); topoSVG(null,null,$('#topoSvg')); };
+  // traffic
+  $('#trApply').onclick=drawTraffic;
+  $('#trLink').onchange=drawTraffic;
+  // path
+  $('#paCalc').onclick=tracePath;
+  $('#paSrc').onchange=tracePath; $('#paDst').onchange=tracePath;
+  // inventory
+  $('#invSearch').oninput=APP.PAGE_RENDER.inventory;
+  $('#invModel').onchange=APP.PAGE_RENDER.inventory;
+  // discovery
+  $('#dcScan').onclick=startScan;
+  $('#dcStop').onclick=()=>{ APP.SCAN.running=false; };
+  $('#dcRegAll').onclick=registerAll;
+  // fill SNMP profile dropdown
+  APP.SNMP_PROFILES.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;$('#dcProfile').appendChild(o)});
+  // alerts
+  $('#alSev').onchange=APP.PAGE_RENDER.alerts;
+  $('#alStat').onchange=APP.PAGE_RENDER.alerts;
+  // reports
+  $('#rpGen').onclick=generateReport;
+  // settings tabs
+  $$('.settings-tabs a').forEach(a=>a.onclick=()=>renderSettings(a.dataset.tab));
+  // clock + sim
+  clockTick(); setInterval(clockTick,1000);
+  APP.SIM.start();
+  // initial render
+  navigate('overview');
+  updateTopbar();
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+
+
+
+</script>
+</body>
+</html>
